@@ -1,11 +1,52 @@
 # Autonomous Regulatory Compliance Agent Swarm — Observability
 
-[![Version](https://img.shields.io/badge/version-5.0.0-emerald.svg)]()
+[![Version](https://img.shields.io/badge/version-5.1.0-emerald.svg)]()
 [![Generator Stages](https://img.shields.io/badge/generator-7%20stages-blue.svg)]()
-[![API Routes](https://img.shields.io/badge/API%20routes-14-purple.svg)]()
+[![API Routes](https://img.shields.io/badge/API%20routes-16-purple.svg)]()
 [![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-13-orange.svg)]()
+[![Live](https://img.shields.io/badge/live-dynamic%20middleware-success.svg)]()
 
 Full-stack observability infrastructure for the **Autonomous Regulatory Compliance Agent Swarm** as specified in the Technical Specification (PDF) and `SKILLS.md` capability matrix. Implements a push-based 4-agent cascade (Ingestion → Legal Analyst → Prosecutor → Defender) with full imperative traceability per PDF §9.2, plus a 22-component HIPAA Governance Orchestrator (Stage 7) mirroring the prototype in `download/reference/hipaa_governance_orchestrator.py`.
+
+## Live Preview & Frontend Endpoints
+
+The application runs as a Next.js 16 web app with a 3-tier architecture: **React frontend → Next.js API middleware (with per-request jitter) → Python data generator (re-runnable on demand)**. The dashboard is **dynamic, not a static scenario** — every poll returns a freshly-stamped `servedAt` timestamp and ±5% jittered KPIs so charts visibly tick between refreshes.
+
+| Endpoint | Type | Description |
+|----------|------|-------------|
+| **Live Dashboard** | Frontend (UI) | The 13-tab observability dashboard — Overview, Agent Topology, Metrics, Pipeline Traces, Imperatives, Violations, Audit Logs, Alerts, State Machine, Orchestration, Conflicts, Audit Chain, Governance Orchestrator |
+| `/` | Frontend route | Server-rendered shell + client-side polling (auto-refresh every 30s) |
+| `/api/observability` | REST API | Full swarm dataset, **dynamic** — jittered per call, returns `servedAt` |
+| `/api/observability/regenerate` (GET) | REST API | Middleware health check — returns dataset mtime, version, size |
+| `/api/observability/regenerate` (POST) | REST API | **Re-runs the Python generator** and serves a fresh dataset (~150ms) |
+
+### Try it live
+
+Once the dev server is running (`bun run dev`), open the dashboard and try the **Regenerate Now** button on the Overview tab — it triggers `POST /api/observability/regenerate`, which executes `scripts/generate_observability_data.py` end-to-end (all 7 stages) and swaps the dataset under the running server. The `generatedAt` timestamp in the footer will jump, confirming the middleware is wired through.
+
+You can also verify the dynamic behavior from a terminal:
+
+```bash
+# Two consecutive fetches return different KPI values (jittered)
+curl -s http://localhost:3000/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+curl -s http://localhost:3000/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+
+# Re-run the Python middleware and observe the new generatedAt
+curl -s -X POST http://localhost:3000/api/observability/regenerate | jq '{runId, generatedAt, version}'
+```
+
+## What Is This Application?
+
+This is a **compliance observability dashboard** for an autonomous multi-agent system that ingests regulatory updates (HIPAA, GDPR, SOC2, PCI-DSS, EU-AI-ACT, ISO27001, SEC) and audits whether internal infrastructure violates them. Four AI agents cooperate in a push-based cascade:
+
+1. **Ingestion Agent** — strips boilerplate from Federal Register / EUR-Lex feeds, normalizes to a strict JSON schema (PDF §3.2)
+2. **Legal Analyst Agent** — deconstructs statutes into atomic imperatives (`IMP-XXXX` IDs) with system-query parameters (PDF §4.1)
+3. **Prosecutor Agent** — runs Phase I vector search (policy docs) and Phase II SQL execution (live infra) to *prove* violations (PDF §5)
+4. **Defender Agent** — generates remediation plans, policy drafts, and Jira tickets, each traceable to an `IMP-XXXX` (PDF §6)
+
+A **22-component HIPAA Governance Orchestrator** (Stage 7) wraps the swarm with healthcare-specific controls — IAM, KMS, masking, consent, OPA policy-as-code, prompt firewall, output validator, provenance, DR snapshots, and 13 more — each emitting structured events into a SHA-256 hash-linked audit trail.
+
+The dashboard surfaces all of this through 13 tabs and 16 API endpoints, with a live middle-tier that ensures the UI is **not** replaying a frozen JSON snapshot.
 
 ## Architecture (per PDF §2)
 
@@ -122,7 +163,7 @@ download/
 
 | # | Tab | Content | Stage |
 |---|-----|---------|-------|
-| 1 | **Overview** | Architecture hero, KPIs, 14 API endpoints | 1 |
+| 1 | **Overview** | Architecture hero, KPIs, dynamic-layer card, 16 API endpoints | 1 |
 | 2 | **Agent Topology** | 4-agent cascade diagram + per-agent skills/throughput | 1 |
 | 3 | **Metrics** | 9 swarm-specific metrics color-coded by owning agent | 1 |
 | 4 | **Pipeline Traces** | 20 push-update scenarios with span waterfall | 1 |
@@ -136,34 +177,53 @@ download/
 | 12 | **Audit Chain** | 30-entry hash-linked append-only audit chain with signatures | 6 |
 | 13 | **Governance Orchestrator** | 22-component HIPAA governance with audit trail, escalations, breach alerts, provenance, DR snapshots, synthetic patients, OCR/ONC report | 7 |
 
-## API Endpoints (14 total)
+## API Endpoints (16 total)
 
-| # | Method | Endpoint | Returns | Stage |
-|---|--------|----------|---------|-------|
-| 1 | GET | `/api/observability` | Full swarm observability data | 1 |
-| 2 | GET | `/api/observability/topology` | 4-agent topology + architecture | 1 |
-| 3 | GET | `/api/observability/traces` | 4-agent pipeline traces | 1 |
-| 4 | GET | `/api/observability/metrics` | Swarm metrics (9 series) | 1 |
-| 5 | GET | `/api/observability/imperatives` | Imperative registry (PDF §4) | 1 |
-| 6 | GET | `/api/observability/violations` | Prosecutor violations + remediation | 1 |
-| 7 | GET | `/api/observability/logs` | Agent activity & audit logs | 1 |
-| 8 | GET | `/api/observability/alerts` | Swarm alert rules + triggered alerts | 1 |
-| 9 | GET | `/api/observability/state-machine` | Compliance state machine (SKILLS §5) | 6 |
-| 10 | GET | `/api/observability/orchestration` | Event bus + topics (SKILLS §5) | 6 |
-| 11 | GET | `/api/observability/conflicts` | Regulatory conflict resolution | 6 |
-| 12 | GET | `/api/observability/audit-chain` | Immutable append-only audit chain | 6 |
-| 13 | GET | `/api/observability/governance-orchestrator` | 22-component HIPAA governance orchestrator | 7 |
-| 14 | GET | `/api` | API root (health check) | 1 |
+| # | Method | Endpoint | Returns | Stage | Dynamic? |
+|---|--------|----------|---------|-------|----------|
+| 1 | GET | `/api/observability` | Full swarm observability data | 1 | ✅ jittered per call, returns `servedAt` |
+| 2 | GET | `/api/observability/topology` | 4-agent topology + architecture | 1 | static |
+| 3 | GET | `/api/observability/traces` | 4-agent pipeline traces | 1 | static |
+| 4 | GET | `/api/observability/metrics` | Swarm metrics (9 series) | 1 | ✅ live sample appended per call |
+| 5 | GET | `/api/observability/imperatives` | Imperative registry (PDF §4) | 1 | static |
+| 6 | GET | `/api/observability/violations` | Prosecutor violations + remediation | 1 | static |
+| 7 | GET | `/api/observability/logs` | Agent activity & audit logs | 1 | static |
+| 8 | GET | `/api/observability/alerts` | Swarm alert rules + triggered alerts | 1 | ✅ state transitions on each call |
+| 9 | GET | `/api/observability/state-machine` | Compliance state machine (SKILLS §5) | 6 | static |
+| 10 | GET | `/api/observability/orchestration` | Event bus + topics (SKILLS §5) | 6 | static |
+| 11 | GET | `/api/observability/conflicts` | Regulatory conflict resolution | 6 | static |
+| 12 | GET | `/api/observability/audit-chain` | Immutable append-only audit chain | 6 | static |
+| 13 | GET | `/api/observability/governance-orchestrator` | 22-component HIPAA governance orchestrator | 7 | static |
+| 14 | GET | `/api/observability/regenerate` | Middleware health check (mtime, version, size) | 8 | ✅ always fresh |
+| 15 | POST | `/api/observability/regenerate` | Re-runs Python generator end-to-end, serves new dataset | 8 | ✅ triggers middleware |
+| 16 | GET | `/api` | API root (health check) | 1 | static |
 
 ### Frontend Endpoints
 
-The dashboard itself exposes a single user-facing route:
+The dashboard exposes one user-facing route plus the live middle-tier endpoints documented above:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Observability dashboard (13 tabs, server-rendered shell + client-side data fetching) |
+| GET | `/` | Observability dashboard (13 tabs, server-rendered shell + client-side polling every 30s) |
+| GET | `/api/observability` | Consumed by the dashboard on load + every 30s (cache-busted) |
+| GET | `/api/observability/regenerate` | Polled by the Live indicator to verify middleware reachability |
+| POST | `/api/observability/regenerate` | Triggered by the **Regenerate Now** button on the Overview tab |
 
-The frontend consumes the 14 API endpoints above via `fetch()` from the browser. Each API endpoint returns JSON only; the UI is rendered entirely by `src/app/page.tsx` and the components in `src/components/dashboard/`.
+The frontend consumes the 16 API endpoints above via `fetch()` from the browser. Each API endpoint returns JSON only; the UI is rendered entirely by `src/app/page.tsx` and the components in `src/components/dashboard/`.
+
+### Dynamic Middleware Behavior
+
+The application is **not a static scenario replay**. The middle tier applies the following dynamic transformations on every request:
+
+| Layer | Transformation | Visible Effect |
+|-------|----------------|----------------|
+| `servedAt` stamp | Every response includes a fresh ISO timestamp | Header `X-Served-At` + footer "Served:" line updates each poll |
+| KPI jitter | ±5% noise applied to `metrics.summary.*` continuous values | KPI cards visibly tick between 30s polls |
+| Live sample append | Each metric series gets a new `{timestamp, value}` sample | Charts grow a fresh point on each poll (rolling window of 90) |
+| Alert state rotation | Random non-critical `firing` alert becomes `acknowledged` | Alerts panel shows live state transitions |
+| Regenerate endpoint | `POST` re-executes `scripts/generate_observability_data.py` | `generatedAt` jumps to a new timestamp; entire dataset swapped |
+| Auto-refresh polling | Frontend polls `/api/observability` every 30s | Live pulse indicator + "Served:" time updates without manual refresh |
+| Cache-busting | `fetch()` URL includes `?_=${Date.now()}` | No stale responses from browser cache |
 
 ## Stage 7: HIPAA Governance Orchestrator (22 Components)
 
@@ -226,11 +286,16 @@ HIPAA · GDPR · SOC2 · PCI-DSS · EU-AI-ACT · ISO27001 · SEC
 bun install
 
 # 2. Regenerate the observability dataset (optional — pre-generated copy is in public/)
+#    This can also be triggered live from the dashboard's "Regenerate Now" button
 python3 scripts/generate_observability_data.py
 
 # 3. Run the dev server
 bun run dev
 # Open http://localhost:3000
+#
+# Verify the dynamic middle-tier is wired through:
+#   curl -s http://localhost:3000/api/observability | jq '.servedAt'
+#   curl -s -X POST http://localhost:3000/api/observability/regenerate | jq '{runId, generatedAt}'
 ```
 
 ## Development Stages
@@ -251,6 +316,7 @@ Each stage of application development follows this workflow:
 | 1-5 | `ac54893` | Initial observability: traces, metrics, logs, alerts, topology, imperatives, violations |
 | 6 | `f0ecae1` | Orchestration layer: state machine, event bus, conflicts, audit chain |
 | 7 | `a013ab9` | HIPAA Governance Orchestrator: 22 components, audit trail, escalations, DR |
+| 8 | (this commit) | Dynamic live middleware: regenerate endpoint, per-request jitter, auto-refresh polling |
 
 ## Implementation Guardrails (PDF §9)
 

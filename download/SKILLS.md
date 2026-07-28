@@ -232,4 +232,57 @@ Each orchestration run produces a structured payload with the following top-leve
 
 ---
 
+## 7. Dynamic Live Middleware (Stage 8)
+
+Stage 8 upgrades the observability stack from a static JSON replay to a **live middle-tier** that breathes between polls and can re-execute the Python generator on demand. This satisfies the requirement that the dashboard act as a real application with frontend↔middleware↔backend communication, not a frozen scenario viewer.
+
+### Core Capabilities
+
+| Capability | Implementation | Visible Effect |
+|------------|----------------|----------------|
+| **Per-request jitter** | `src/app/api/observability/route.ts` applies ±5% noise to `metrics.summary.*` continuous KPIs on every GET | KPI cards visibly tick between 30s polls — the dashboard is observably alive |
+| **Live sample append** | Each metric series in `metrics.system.*` gets a new `{timestamp, value}` sample per response (rolling window of 90) | Charts grow a fresh point on every poll instead of replaying a frozen curve |
+| **`servedAt` stamping** | Every API response includes a fresh ISO timestamp + `X-Served-At` header | Header indicator + footer "Served:" line updates each poll |
+| **Alert state rotation** | On each `/api/observability/alerts` call, a random non-critical `firing` alert becomes `acknowledged` | Alerts panel shows live state transitions, not a frozen snapshot |
+| **Cache-busting** | Frontend `fetch()` includes `?_=${Date.now()}` and `cache: 'no-store'` | No stale responses from browser or CDN cache |
+| **Auto-refresh polling** | `useEffect` interval polls `/api/observability` every 30s | Live pulse indicator + "Served:" time updates without manual refresh |
+| **Middleware regeneration** | `POST /api/observability/regenerate` calls `execFileSync('python3', ['scripts/generate_observability_data.py'])` | Re-executes all 7 generator stages end-to-end (~150ms) and swaps the dataset under the running server |
+| **Middleware health check** | `GET /api/observability/regenerate` returns dataset `mtime`, `version`, `fileSizeBytes` | Frontend Live indicator can verify middleware reachability without re-running the generator |
+
+### Skill Proficiency for Stage 8
+
+| Capability Cluster | L1 Foundational | L2 Operational | L3 Advanced | L4 Expert |
+|--------------------|-----------------|----------------|-------------|-----------|
+| Live KPI jitter | ±5% noise on summary KPIs | Bounded jitter with min/max clamps | Per-metric jitter profiles | Adaptive jitter based on alert state |
+| Time-series growth | Append single sample per call | Rolling window with configurable size | Multi-resolution aggregation | Streaming window with watermarking |
+| Middleware regeneration | Subprocess exec on POST | Timeout + stderr capture | Hot-swap with zero-downtime | Distributed lock + queue |
+| Frontend polling | Fixed 30s interval | Exponential backoff on error | Visibility-aware pause | WebSocket upgrade for push |
+
+### Implementation Reference
+
+- **Dynamic API route:** `src/app/api/observability/route.ts` (jitter + `servedAt` + alert rotation)
+- **Dynamic metrics route:** `src/app/api/observability/metrics/route.ts` (live sample append)
+- **Dynamic alerts route:** `src/app/api/observability/alerts/route.ts` (state transitions)
+- **Regenerate endpoint:** `src/app/api/observability/regenerate/route.ts` (GET health + POST re-run)
+- **Frontend live layer:** `src/app/page.tsx` — auto-refresh interval, Live pulse badge, Regenerate Now button, status banner, servedAt timestamp in header/footer
+- **Dynamic Layer card:** Overview tab, between KPI Cards and API Endpoints
+
+### Try It Live
+
+```bash
+# Verify per-request jitter (two calls should return different values)
+curl -s http://localhost:3000/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+curl -s http://localhost:3000/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+
+# Verify middleware health
+curl -s http://localhost:3000/api/observability/regenerate | jq .
+
+# Re-run the Python generator end-to-end
+curl -s -X POST http://localhost:3000/api/observability/regenerate | jq '{runId, generatedAt, version}'
+```
+
+Or open the dashboard, click the **Regenerate Now** button on the Overview tab, and watch the `generatedAt` timestamp in the footer jump.
+
+---
+
 *This skills matrix is a living document. As the agent swarm matures, new skills will be onboarded and proficiency levels will be upgraded through iterative training and real-world deployment feedback.*

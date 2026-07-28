@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
   ShieldCheck, Database, Layers, Scale, Gavel, Network, GitBranch,
-  Radio, Link2, Workflow, Boxes,
+  Radio, Link2, Workflow, Boxes, Zap, CircleDot, AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -27,6 +27,7 @@ import { GovernanceOrchestratorPanel } from '@/components/dashboard/governance-o
 
 interface ObservabilityData {
   generatedAt: string
+  servedAt?: string
   generator: string
   version: string
   project: string
@@ -87,26 +88,79 @@ interface ObservabilityData {
   }
 }
 
+const REFRESH_INTERVAL_MS = 30_000 // auto-refresh every 30s
+
 export default function Home() {
   const [data, setData] = useState<ObservabilityData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+  const [regenerating, setRegenerating] = useState(false)
+  const [regenerateStatus, setRegenerateStatus] = useState<
+    { ok: boolean; message: string; runId?: string } | null
+  >(null)
+  const [pollError, setPollError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
 
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchData = async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setRefreshing(true)
     try {
-      const res = await fetch('/api/observability')
+      // Cache-bust so the dynamic route always returns fresh jittered data
+      const res = await fetch(`/api/observability?_=${Date.now()}`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json)
+      setLastRefreshed(new Date())
+      setPollError(null)
     } catch (err) {
       console.error('Failed to fetch observability data:', err)
+      setPollError(err instanceof Error ? err.message : 'fetch failed')
     } finally {
+      setRefreshing(false)
       setLoading(false)
     }
   }
 
+  const handleRegenerate = async () => {
+    setRegenerating(true)
+    setRegenerateStatus(null)
+    try {
+      const res = await fetch('/api/observability/regenerate', { method: 'POST' })
+      const json = await res.json()
+      if (json.ok) {
+        setRegenerateStatus({
+          ok: true,
+          message: `Regenerated — v${json.version}, generatedAt ${json.generatedAt}`,
+          runId: json.runId,
+        })
+        // Pull the fresh data into the UI immediately
+        await fetchData({ silent: true })
+      } else {
+        setRegenerateStatus({ ok: false, message: json.error || 'Regeneration failed' })
+      }
+    } catch (err) {
+      setRegenerateStatus({
+        ok: false,
+        message: err instanceof Error ? err.message : 'Regeneration request failed',
+      })
+    } finally {
+      setRegenerating(false)
+      // Auto-clear the status banner after 8s
+      setTimeout(() => setRegenerateStatus(null), 8_000)
+    }
+  }
+
+  // Initial load
   useEffect(() => {
     fetchData()
+  }, [])
+
+  // Auto-refresh polling every REFRESH_INTERVAL_MS
+  useEffect(() => {
+    const id = setInterval(() => fetchData({ silent: true }), REFRESH_INTERVAL_MS)
+    return () => clearInterval(id)
   }, [])
 
   if (loading || !data) {
@@ -119,6 +173,12 @@ export default function Home() {
       </div>
     )
   }
+
+  const servedAtStr = data.servedAt
+    ? new Date(data.servedAt).toLocaleTimeString()
+    : lastRefreshed
+      ? lastRefreshed.toLocaleTimeString()
+      : '—'
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -159,8 +219,39 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={fetchData} className="text-xs">
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            {/* Live indicator — pulses while polling is healthy */}
+            <Badge
+              variant="outline"
+              className={`text-[10px] gap-1 ${
+                pollError
+                  ? 'border-red-500/40 text-red-600'
+                  : 'border-emerald-500/40 text-emerald-600'
+              }`}
+              title={pollError ? `Polling error: ${pollError}` : 'Auto-refreshing every 30s'}
+            >
+              <span className="relative flex h-2 w-2">
+                {!pollError && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    pollError ? 'bg-red-500' : 'bg-emerald-500'
+                  }`}
+                />
+              </span>
+              {pollError ? 'Live: error' : 'Live'}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground hidden md:inline">
+              Served: {servedAtStr}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchData()}
+              className="text-xs"
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button variant="outline" size="sm" className="text-xs" asChild>
@@ -172,6 +263,34 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Regenerate status banner (transient) */}
+      {regenerateStatus && (
+        <div
+          className={`fixed top-16 right-4 z-[60] max-w-sm p-3 rounded-lg shadow-lg border text-xs ${
+            regenerateStatus.ok
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-200'
+              : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950 dark:border-red-800 dark:text-red-200'
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            {regenerateStatus.ok ? (
+              <Zap className="h-4 w-4 mt-0.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            )}
+            <div className="flex-1">
+              <div className="font-semibold">
+                {regenerateStatus.ok ? 'Dataset regenerated' : 'Regeneration failed'}
+              </div>
+              <div className="text-[10px] opacity-90 mt-0.5">{regenerateStatus.message}</div>
+              {regenerateStatus.runId && (
+                <div className="text-[10px] opacity-70 mt-0.5 font-mono">{regenerateStatus.runId}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
@@ -291,6 +410,54 @@ export default function Home() {
             {/* KPI Cards */}
             <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary as any} />
 
+            {/* Dynamic Layer — live middleware status + Regenerate button */}
+            <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-50/30 to-cyan-50/20 dark:from-emerald-950/20 dark:to-cyan-950/10">
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex items-center gap-2">
+                      <CircleDot className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <h3 className="text-sm font-semibold">Dynamic Live Layer</h3>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground space-y-0.5 max-w-xl">
+                      <p>
+                        The dashboard is <span className="font-semibold text-emerald-600 dark:text-emerald-400">not a static scenario</span> — it polls
+                        <code className="font-mono mx-1 text-[10px] bg-muted px-1 py-0.5 rounded">/api/observability</code>
+                        every 30s. The API stamps a fresh <code className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded">servedAt</code> and
+                        applies ±5% jitter to continuous KPIs on every response, so charts visibly tick between polls.
+                      </p>
+                      <p>
+                        The Regenerate button calls
+                        <code className="font-mono mx-1 text-[10px] bg-muted px-1 py-0.5 rounded">/api/observability/regenerate</code>,
+                        which re-runs the Python generator (middleware) and serves an entirely new dataset.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={handleRegenerate}
+                      disabled={regenerating}
+                      className="text-xs gap-1.5"
+                    >
+                      <Zap className={`h-3.5 w-3.5 ${regenerating ? 'animate-pulse' : ''}`} />
+                      {regenerating ? 'Regenerating…' : 'Regenerate Now'}
+                    </Button>
+                    <div className="text-[10px] text-muted-foreground text-right">
+                      <div>Generated: <span className="font-mono">{new Date(data.generatedAt).toLocaleString()}</span></div>
+                      {data.servedAt && (
+                        <div>Served: <span className="font-mono">{new Date(data.servedAt).toLocaleTimeString()}</span></div>
+                      )}
+                      {lastRefreshed && (
+                        <div>Polled: <span className="font-mono">{lastRefreshed.toLocaleTimeString()}</span></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* API Endpoints */}
             <Card>
               <CardContent className="p-4">
@@ -303,11 +470,11 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { method: 'GET', path: '/api/observability', desc: 'Full swarm observability data', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability', desc: 'Full swarm observability data (dynamic — jittered per call)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
                     { method: 'GET', path: '/api/observability/traces', desc: '4-agent pipeline traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
-                    { method: 'GET', path: '/api/observability/metrics', desc: 'Swarm pipeline metrics', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+                    { method: 'GET', path: '/api/observability/metrics', desc: 'Swarm pipeline metrics (dynamic — live sample appended)', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
                     { method: 'GET', path: '/api/observability/logs', desc: 'Agent activity & audit logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-                    { method: 'GET', path: '/api/observability/alerts', desc: 'Swarm alert rules & triggered alerts', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+                    { method: 'GET', path: '/api/observability/alerts', desc: 'Swarm alert rules & triggered alerts (dynamic — state transitions)', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
                     { method: 'GET', path: '/api/observability/topology', desc: '4-agent swarm topology & skills', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
                     { method: 'GET', path: '/api/observability/imperatives', desc: 'Imperative registry (PDF §4)', color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
                     { method: 'GET', path: '/api/observability/violations', desc: 'Prosecutor violations & remediation', color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' },
@@ -316,8 +483,10 @@ export default function Home() {
                     { method: 'GET', path: '/api/observability/conflicts', desc: 'Regulatory conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
                     { method: 'GET', path: '/api/observability/audit-chain', desc: 'Immutable append-only audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
                     { method: 'GET', path: '/api/observability/governance-orchestrator', desc: '22-component HIPAA governance orchestrator (Stage 7)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/regenerate', desc: 'Middleware health check (dataset mtime, version)', color: 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300' },
+                    { method: 'POST', path: '/api/observability/regenerate', desc: 'Re-run Python generator, serve fresh dataset (dynamic middleware)', color: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300' },
                   ].map((ep) => (
-                    <div key={ep.path} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                    <div key={`${ep.method}-${ep.path}`} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
                       <code className="text-xs font-mono flex-1">{ep.path}</code>
                       <span className="text-[10px] text-muted-foreground hidden lg:inline">{ep.desc}</span>
@@ -401,6 +570,14 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[10px]">{data.version}</Badge>
             <span>Generated: {new Date(data.generatedAt).toLocaleString()} UTC</span>
+            {data.servedAt && (
+              <>
+                <Separator orientation="vertical" className="h-3" />
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Served: {new Date(data.servedAt).toLocaleTimeString()} UTC
+                </span>
+              </>
+            )}
           </div>
         </div>
       </footer>
