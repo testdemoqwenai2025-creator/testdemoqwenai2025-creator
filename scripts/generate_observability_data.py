@@ -835,6 +835,349 @@ def generate_violations(traces):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Stage 6: Orchestration Layer (SKILLS.md §5)
+#   - Compliance State Machine (6 states, valid transitions)
+#   - Event Bus (topics, partitions, consumer groups, lag)
+#   - Conflict Resolution (overlapping regulations)
+#   - Immutable Audit Chain (append-only hash chain)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Compliance state machine (matches state_machine_conflict_engine.py reference)
+COMPLIANCE_STATES = ["compliant", "at_risk", "non_compliant", "under_remediation", "escalated", "audit_pending"]
+
+VALID_TRANSITIONS = {
+    "compliant":          ["at_risk", "audit_pending"],
+    "at_risk":            ["compliant", "non_compliant", "under_remediation"],
+    "non_compliant":      ["under_remediation", "escalated"],
+    "under_remediation":  ["compliant", "at_risk", "non_compliant"],
+    "escalated":          ["under_remediation", "non_compliant"],
+    "audit_pending":      ["compliant", "at_risk", "non_compliant"],
+}
+
+STATE_SCORE_DELTA = {
+    "compliant": 25, "at_risk": -15, "non_compliant": -30,
+    "under_remediation": -5, "escalated": -25, "audit_pending": -5,
+}
+
+TRIGGERS = [
+    "regulatory_change_detected", "violation_confirmed", "remediation_started",
+    "remediation_completed", "human_approval_granted", "human_approval_denied",
+    "audit_initiated", "audit_completed_pass", "audit_completed_fail",
+    "risk_threshold_exceeded", "deadline_approaching",
+]
+
+ENTITY_TYPES = [
+    ("data_store", "PHI Database", "HIPAA"),
+    ("api_endpoint", "Patient Access API", "HIPAA"),
+    ("iam_policy", "Admin Role IAM", "PCI-DSS"),
+    ("data_store", "Customer PII Store", "GDPR"),
+    ("ai_system", "Loan Decision Model", "EU-AI-ACT"),
+    ("infrastructure", "CDE Network Segment", "PCI-DSS"),
+    ("application", "Trading Platform", "SEC"),
+    ("data_store", "Audit Log Store", "ISO27001"),
+]
+
+
+def generate_state_machine(num_transitions=40):
+    """SKILLS.md §5: State Management — compliance state machine."""
+    entities = []
+    for i, (etype, edesc, jurisdiction) in enumerate(ENTITY_TYPES):
+        eid = f"ENT-{etype.upper()[:3]}-{i+1:03d}"
+        entities.append({
+            "id": eid,
+            "type": etype,
+            "description": edesc,
+            "jurisdiction": jurisdiction,
+            "current_state": "compliant",
+            "registered_at": ts(minutes_ago=240 - i * 10),
+            "compliance_score": 100.0,
+            "risk_factors": [],
+        })
+
+    transitions = []
+    state_histories = {e["id"]: [e["current_state"]] for e in entities}
+    metrics = {"transitions": 0, "escalations": 0, "resolutions": 0, "invalid_attempts": 0}
+
+    for i in range(num_transitions):
+        entity = rand_choice(entities)
+        from_state = entity["current_state"]
+        valid_targets = VALID_TRANSITIONS.get(from_state, [])
+        if not valid_targets:
+            continue
+        to_state = rand_choice(valid_targets)
+        trigger = rand_choice(TRIGGERS)
+        transition_id = f"TRN-{uuid.uuid4().hex[:8].upper()}"
+        approved_by = None
+        if to_state == "under_remediation" or to_state == "escalated":
+            approved_by = rand_choice(["cco@company.com", "ciso@company.com", "legal-counsel@company.com"])
+
+        transition = {
+            "transition_id": transition_id,
+            "entity_id": entity["id"],
+            "entity_type": entity["type"],
+            "entity_description": entity["description"],
+            "from_state": from_state,
+            "to_state": to_state,
+            "trigger": trigger,
+            "evidence": [
+                f"Triggered by: {trigger}",
+                f"Trace ID: {uuid.uuid4().hex[:16]}",
+                f"Regulation: {entity['jurisdiction']}",
+            ],
+            "timestamp": ts(minutes_ago=random.randint(0, 200)),
+            "trace_id": uuid.uuid4().hex[:16],
+            "approved_by": approved_by,
+            "compliance_score_before": entity["compliance_score"],
+            "compliance_score_after": round(max(0, min(100, entity["compliance_score"] + STATE_SCORE_DELTA[to_state])), 1),
+        }
+        transitions.append(transition)
+        entity["current_state"] = to_state
+        entity["compliance_score"] = transition["compliance_score_after"]
+        state_histories[entity["id"]].append(to_state)
+        metrics["transitions"] += 1
+        if to_state == "escalated":
+            metrics["escalations"] += 1
+        if to_state == "compliant" and from_state != "audit_pending":
+            metrics["resolutions"] += 1
+
+    transitions.sort(key=lambda t: t["timestamp"], reverse=True)
+    return {
+        "entities": entities,
+        "total_transitions": len(transitions),
+        "transitions": transitions[:30],  # Top 30 most recent
+        "state_histories": state_histories,
+        "valid_transitions": VALID_TRANSITIONS,
+        "metrics": metrics,
+        "state_distribution": {
+            state: len([e for e in entities if e["current_state"] == state])
+            for state in COMPLIANCE_STATES
+        },
+    }
+
+
+# Event bus topics (matches agent_swarm_core.py reference)
+EVENT_BUS_TOPICS = [
+    {"name": "regulatory.changes", "partitions": 3, "consumer_group": "legal_analysts",
+     "description": "Raw regulation events from Agent 1"},
+    {"name": "analysis.results", "partitions": 3, "consumer_group": "prosecutors",
+     "description": "Imperative extraction results from Agent 2"},
+    {"name": "gap.findings", "partitions": 3, "consumer_group": "defenders",
+     "description": "Violation reports from Agent 3"},
+    {"name": "remediation.plans", "partitions": 3, "consumer_group": "auditors",
+     "description": "Remediation artifacts from Agent 4"},
+    {"name": "governance.audit", "partitions": 5, "consumer_group": "auditors",
+     "description": "Audit trail events (immutable)"},
+    {"name": "escalation.requests", "partitions": 2, "consumer_group": "compliance_leads",
+     "description": "Human-in-loop escalation requests"},
+    {"name": "state.transitions", "partitions": 4, "consumer_group": "orchestrator",
+     "description": "Compliance state machine transitions"},
+    {"name": "conflict.alerts", "partitions": 2, "consumer_group": "legal_analysts",
+     "description": "Regulatory conflict notifications"},
+]
+
+
+def generate_event_bus():
+    """SKILLS.md §5: Event-Driven Dispatch."""
+    topics = []
+    for topic_def in EVENT_BUS_TOPICS:
+        partitions = []
+        for p in range(topic_def["partitions"]):
+            messages = random.randint(120, 950)
+            consumed = messages - random.randint(0, 35)
+            partitions.append({
+                "partition": p,
+                "messages_total": messages,
+                "messages_consumed": consumed,
+                "lag": messages - consumed,
+                "offset_latest": messages + 1000,
+                "earliest_offset": 1000,
+                "size_mb": round(messages * random.uniform(0.8, 2.4), 1),
+            })
+        topics.append({
+            "name": topic_def["name"],
+            "description": topic_def["description"],
+            "consumer_group": topic_def["consumer_group"],
+            "partitions": partitions,
+            "total_messages": sum(p["messages_total"] for p in partitions),
+            "total_lag": sum(p["lag"] for p in partitions),
+            "total_size_mb": round(sum(p["size_mb"] for p in partitions), 1),
+            "avg_throughput_per_min": round(random.uniform(50, 320), 1),
+            "consumer_group_lag": random.randint(0, 35),
+        })
+
+    return {
+        "topics": topics,
+        "total_topics": len(topics),
+        "total_messages": sum(t["total_messages"] for t in topics),
+        "total_lag": sum(t["total_lag"] for t in topics),
+        "total_size_mb": round(sum(t["total_size_mb"] for t in topics), 1),
+        "metrics": {
+            "published_total": sum(t["total_messages"] for t in topics),
+            "consumed_total": sum(t["total_messages"] - t["total_lag"] for t in topics),
+            "failed_total": random.randint(2, 18),
+            "avg_latency_ms": round(random.uniform(8, 42), 1),
+        },
+    }
+
+
+# Conflict resolution (matches state_machine_conflict_engine.py reference)
+CONFLICT_TYPES = [
+    "penalty_discrepancy",    # Different penalties for same violation
+    "temporal_conflict",      # Different deadlines
+    "jurisdictional_overlap", # Multiple jurisdictions claim authority
+    "requirement_contradiction",  # Direct contradiction
+    "scope_overlap",          # Regulations apply to same scope
+]
+
+CONFLICT_RESOLUTION_STRATEGIES = [
+    ("apply_strictest", "Apply the most stringent requirement"),
+    ("jurisdictional_split", "Apply different rules by geography"),
+    ("regulation_a_takes_precedence", "Newer regulation supersedes older"),
+    ("merge_requirements", "Combine all requirements"),
+    ("escalate_to_legal", "Escalate to human legal review"),
+    ("temporal_supersede", "Newer temporal rule wins"),
+]
+
+
+def generate_conflicts(num_conflicts=15):
+    """SKILLS.md §5: Conflict Resolution — between overlapping regulations."""
+    conflicts = []
+    for i in range(num_conflicts):
+        reg_a = rand_choice(REGULATORY_SOURCES)
+        reg_b = rand_choice([r for r in REGULATORY_SOURCES if r["id"] != reg_a["id"]])
+        conflict_type = rand_choice(CONFLICT_TYPES)
+        strategy, strategy_desc = rand_choice(CONFLICT_RESOLUTION_STRATEGIES)
+        is_resolved = random.random() < 0.7  # 70% resolved
+        severity = rand_choice(["critical", "high", "high", "medium", "medium", "low"])
+
+        clause_pairs = [
+            ("30-day retention", "15-day retention"),
+            ("AES-256 encryption", "AES-128 encryption acceptable"),
+            ("Annual access review", "Quarterly access review"),
+            ("MFA required for admin", "MFA optional for trusted networks"),
+            ("365-day audit log", "7-year audit log"),
+            ("Cross-border transfer allowed", "Cross-border transfer prohibited"),
+            ("Human oversight mandatory", "Automated oversight acceptable"),
+        ]
+        clause_a, clause_b = rand_choice(clause_pairs)
+
+        conflict = {
+            "conflict_id": f"CNF-{uuid.uuid4().hex[:8].upper()}",
+            "regulation_a": reg_a["name"],
+            "regulation_b": reg_b["name"],
+            "regulation_a_id": reg_a["id"],
+            "regulation_b_id": reg_b["id"],
+            "clause_a": clause_a,
+            "clause_b": clause_b,
+            "conflict_type": conflict_type,
+            "severity": severity,
+            "description": _build_conflict_description(conflict_type, reg_a, reg_b, clause_a, clause_b),
+            "status": "resolved" if is_resolved else "pending",
+            "resolution_strategy": strategy if is_resolved else None,
+            "resolution_description": strategy_desc if is_resolved else None,
+            "resolution": f"Resolved using strategy: {strategy}" if is_resolved else None,
+            "resolved_at": ts(minutes_ago=random.randint(0, 100)) if is_resolved else None,
+            "detected_at": ts(minutes_ago=random.randint(0, 200)),
+            "winner": "regulation_a" if is_resolved and strategy in ("regulation_a_takes_precedence", "apply_strictest") and reg_a["tier"] == "Critical"
+                     else "regulation_b" if is_resolved and strategy in ("regulation_a_takes_precedence", "apply_strictest") and reg_b["tier"] == "Critical"
+                     else ("merged" if is_resolved and strategy == "merge_requirements"
+                           else "split" if is_resolved and strategy == "jurisdictional_split"
+                           else "legal" if is_resolved and strategy == "escalate_to_legal"
+                           else None),
+        }
+        conflicts.append(conflict)
+
+    conflicts.sort(key=lambda c: c["detected_at"], reverse=True)
+    return {
+        "total_detected": len(conflicts),
+        "total_resolved": len([c for c in conflicts if c["status"] == "resolved"]),
+        "total_pending": len([c for c in conflicts if c["status"] == "pending"]),
+        "records": conflicts,
+        "conflict_types": list(set(c["conflict_type"] for c in conflicts)),
+        "resolution_strategies_used": list(set(c["resolution_strategy"] for c in conflicts if c["resolution_strategy"])),
+        "by_severity": {
+            sev: len([c for c in conflicts if c["severity"] == sev])
+            for sev in ["critical", "high", "medium", "low"]
+        },
+    }
+
+
+def _build_conflict_description(conflict_type, reg_a, reg_b, clause_a, clause_b):
+    templates = {
+        "penalty_discrepancy": f"{reg_a['name']} prescribes penalty for '{clause_a}' while {reg_b['name']} prescribes different penalty for '{clause_b}'",
+        "temporal_conflict": f"{reg_a['name']} requires '{clause_a}' but {reg_b['name']} requires '{clause_b}' — incompatible timing",
+        "jurisdictional_overlap": f"{reg_a['name']} ({reg_a['jurisdiction']}) and {reg_b['name']} ({reg_b['jurisdiction']}) both claim authority over '{clause_a}' vs '{clause_b}'",
+        "requirement_contradiction": f"Direct contradiction: '{clause_a}' (from {reg_a['name']}) vs '{clause_b}' (from {reg_b['name']})",
+        "scope_overlap": f"Both {reg_a['name']} and {reg_b['name']} apply to same scope — '{clause_a}' vs '{clause_b}'",
+    }
+    return templates.get(conflict_type, "Conflict detected between regulations")
+
+
+def generate_audit_chain(num_entries=30):
+    """SKILLS.md §5: Immutability & Versioning — append-only audit chain with hash linking."""
+    entries = []
+    prev_hash = "0" * 64  # Genesis block
+    
+    for i in range(num_entries):
+        event_type = rand_choice([
+            "state_transition", "agent_output_published", "violation_detected",
+            "remediation_artifact_generated", "human_approval_granted", "human_approval_denied",
+            "conflict_detected", "conflict_resolved", "schema_validation_passed",
+            "audit_trail_signed", "evidence_collected",
+        ])
+        agent = rand_choice(AGENTS)["name"]
+        entity_id = f"ENT-{rand_choice(['PHI','PII','API','IAM','AI','INF'])}-{random.randint(1,8):03d}"
+        timestamp = ts(minutes_ago=(num_entries - i))
+        
+        payload = {
+            "event_type": event_type,
+            "agent": agent,
+            "entity_id": entity_id,
+            "trace_id": uuid.uuid4().hex[:16],
+            "scenario_id": f"SCN-{uuid.uuid4().hex[:8].upper()}" if random.random() < 0.5 else None,
+            "imperative_id": f"IMP-{random.randint(1000,9999)}" if random.random() < 0.4 else None,
+            "details": f"{event_type.replace('_', ' ')} on {entity_id}",
+        }
+        payload_str = json.dumps(payload, sort_keys=True)
+        current_hash = hashlib.sha256((prev_hash + payload_str).encode()).hexdigest()
+        verification_status = "verified" if random.random() > 0.05 else "mismatch"  # 5% tampering simulation
+        
+        entries.append({
+            "entry_id": f"AUD-{i+1:04d}",
+            "sequence": i + 1,
+            "timestamp": timestamp,
+            "event_type": event_type,
+            "agent": agent,
+            "entity_id": entity_id,
+            "payload": payload,
+            "previous_hash": prev_hash[:32] + "..." if len(prev_hash) > 32 else prev_hash,
+            "current_hash": current_hash[:32] + "..." if len(current_hash) > 32 else current_hash,
+            "full_previous_hash": prev_hash,
+            "full_current_hash": current_hash,
+            "verification_status": verification_status,
+            "storage_location": f"s3://compliance-audit-chain/{ts(0)[:10]}/{i+1:04d}.json",
+            "signed_by": "compliance-audit-kms" if verification_status == "verified" else None,
+            "signature_algorithm": "SHA-256 + RSA-4096" if verification_status == "verified" else None,
+        })
+        prev_hash = current_hash
+    
+    verified_count = len([e for e in entries if e["verification_status"] == "verified"])
+    mismatch_count = len(entries) - verified_count
+    return {
+        "entries": entries,
+        "total_entries": len(entries),
+        "verified_entries": verified_count,
+        "mismatch_entries": mismatch_count,
+        "chain_integrity": "intact" if mismatch_count == 0 else "compromised",
+        "genesis_hash": "0" * 64,
+        "latest_hash": entries[-1]["full_current_hash"] if entries else None,
+        "storage_backend": "S3 + DynamoDB (append-only, versioned)",
+        "retention_policy": "7 years (regulatory requirement)",
+        "signature_algorithm": "SHA-256 + RSA-4096 (HSM-backed)",
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ══════════════════════════════════════════════════════════════════════════════
 
