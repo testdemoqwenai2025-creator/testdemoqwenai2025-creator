@@ -24,144 +24,24 @@ import { ConflictsPanel } from '@/components/dashboard/conflicts-panel'
 import { OrchestrationPanel } from '@/components/dashboard/orchestration-panel'
 import { ProvenancePanel } from '@/components/dashboard/provenance-panel'
 import { GovernanceOrchestratorPanel } from '@/components/dashboard/governance-orchestrator-panel'
-
-interface ObservabilityData {
-  generatedAt: string
-  servedAt?: string
-  generator: string
-  version: string
-  project: string
-  specification: string
-  architecture: {
-    model: string
-    agents: string[]
-    pipeline: string
-    guardrails: string[]
-  }
-  statistics: {
-    totalScenarios: number
-    totalSpans: number
-    violationScenarios: number
-    totalImperatives: number
-    totalViolations: number
-    totalLogs: number
-    errorLogs: number
-    firingAlerts: number
-    resolvedAlerts: number
-    frameworks: number
-    regulationsMonitored: number
-    agents: number
-    // Orchestration (Stage 6)
-    conflictsDetected?: number
-    conflictsResolved?: number
-    eventBusTopics?: number
-    eventBusMessages?: number
-    auditChainEntries?: number
-    auditChainIntact?: boolean
-    stateEntities?: number
-    stateTransitions?: number
-    // Governance Orchestrator (Stage 7)
-    governanceComponents?: number
-    governanceEvents?: number
-    governanceAuditEntries?: number
-    governanceEscalations?: number
-    governanceBreachAlerts?: number
-    governanceProvenanceSteps?: number
-    governanceSyntheticPatients?: number
-    governanceDrSnapshots?: number
-    governanceRiskPosture?: string
-    [key: string]: any
-  }
-  data: {
-    traces: any[]
-    metrics: { system: Record<string, any>; summary: Record<string, number> }
-    logs: any[]
-    alerting: { rules: any[]; triggeredAlerts: any[] }
-    agentTopology: any[]
-    imperativeRegistry: any[]
-    violations: any[]
-    stateMachine: any
-    eventBus: any
-    conflicts: any
-    auditChain: any
-    governanceOrchestrator: any
-  }
-}
-
-const REFRESH_INTERVAL_MS = 30_000 // auto-refresh every 30s
+import { useObservabilityData } from '@/hooks/use-observability-data'
+import type { ObservabilityData } from '@/hooks/observability-types'
 
 export default function Home() {
-  const [data, setData] = useState<ObservabilityData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
-  const [regenerating, setRegenerating] = useState(false)
-  const [regenerateStatus, setRegenerateStatus] = useState<
-    { ok: boolean; message: string; runId?: string } | null
-  >(null)
-  const [pollError, setPollError] = useState<string | null>(null)
+  const {
+    data,
+    loading,
+    refreshing,
+    lastRefreshed,
+    regenerating,
+    regenerateStatus,
+    pollError,
+    consecutiveErrors,
+    fetchData,
+    handleRegenerate,
+  } = useObservabilityData()
+
   const [activeTab, setActiveTab] = useState('overview')
-
-  const fetchData = async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) setRefreshing(true)
-    try {
-      // Cache-bust so the dynamic route always returns fresh jittered data
-      const res = await fetch(`/api/observability?_=${Date.now()}`, {
-        cache: 'no-store',
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      setData(json)
-      setLastRefreshed(new Date())
-      setPollError(null)
-    } catch (err) {
-      console.error('Failed to fetch observability data:', err)
-      setPollError(err instanceof Error ? err.message : 'fetch failed')
-    } finally {
-      setRefreshing(false)
-      setLoading(false)
-    }
-  }
-
-  const handleRegenerate = async () => {
-    setRegenerating(true)
-    setRegenerateStatus(null)
-    try {
-      const res = await fetch('/api/observability/regenerate', { method: 'POST' })
-      const json = await res.json()
-      if (json.ok) {
-        setRegenerateStatus({
-          ok: true,
-          message: `Regenerated — v${json.version}, generatedAt ${json.generatedAt}`,
-          runId: json.runId,
-        })
-        // Pull the fresh data into the UI immediately
-        await fetchData({ silent: true })
-      } else {
-        setRegenerateStatus({ ok: false, message: json.error || 'Regeneration failed' })
-      }
-    } catch (err) {
-      setRegenerateStatus({
-        ok: false,
-        message: err instanceof Error ? err.message : 'Regeneration request failed',
-      })
-    } finally {
-      setRegenerating(false)
-      // Auto-clear the status banner after 8s
-      setTimeout(() => setRegenerateStatus(null), 8_000)
-    }
-  }
-
-  // Initial load
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  // Auto-refresh polling every REFRESH_INTERVAL_MS
-  useEffect(() => {
-    const id = setInterval(() => fetchData({ silent: true }), REFRESH_INTERVAL_MS)
-    return () => clearInterval(id)
-  }, [])
 
   if (loading || !data) {
     return (
@@ -179,6 +59,11 @@ export default function Home() {
     : lastRefreshed
       ? lastRefreshed.toLocaleTimeString()
       : '—'
+
+  const backoffNote =
+    consecutiveErrors > 1
+      ? ` (backoff ${Math.min(5 * Math.pow(2, consecutiveErrors - 1), 60)}s)`
+      : ''
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -227,7 +112,7 @@ export default function Home() {
                   ? 'border-red-500/40 text-red-600'
                   : 'border-emerald-500/40 text-emerald-600'
               }`}
-              title={pollError ? `Polling error: ${pollError}` : 'Auto-refreshing every 30s'}
+              title={pollError ? `Polling error: ${pollError}${backoffNote}` : `Auto-refreshing every 30s`}
             >
               <span className="relative flex h-2 w-2">
                 {!pollError && (
@@ -239,7 +124,7 @@ export default function Home() {
                   }`}
                 />
               </span>
-              {pollError ? 'Live: error' : 'Live'}
+              {pollError ? `Live: err${consecutiveErrors}` : 'Live'}
             </Badge>
             <span className="text-[10px] text-muted-foreground hidden md:inline">
               Served: {servedAtStr}
@@ -408,7 +293,7 @@ export default function Home() {
             </div>
 
             {/* KPI Cards */}
-            <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary as any} />
+            <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary as Parameters<typeof StatsCards>[0]['metricsSummary']} />
 
             {/* Dynamic Layer — live middleware status + Regenerate button */}
             <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-50/30 to-cyan-50/20 dark:from-emerald-950/20 dark:to-cyan-950/10">
@@ -428,7 +313,7 @@ export default function Home() {
                       </p>
                       <p>
                         The Regenerate button calls
-                        <code className="font-mono mx-1 text-[10px] bg-muted px-1 py-0.5 rounded">/api/observability/regenerate</code>,
+                        <code className="font-mono mx-1 text-[10px] bg-muted px-1 py-0.5 rounded">POST /api/observability/regenerate</code>,
                         which re-runs the Python generator (middleware) and serves an entirely new dataset.
                       </p>
                     </div>
@@ -442,7 +327,7 @@ export default function Home() {
                       className="text-xs gap-1.5"
                     >
                       <Zap className={`h-3.5 w-3.5 ${regenerating ? 'animate-pulse' : ''}`} />
-                      {regenerating ? 'Regenerating…' : 'Regenerate Now'}
+                      {regenerating ? 'Regenerating...' : 'Regenerate Now'}
                     </Button>
                     <div className="text-[10px] text-muted-foreground text-right">
                       <div>Generated: <span className="font-mono">{new Date(data.generatedAt).toLocaleString()}</span></div>
@@ -466,25 +351,26 @@ export default function Home() {
                     <Database className="h-4 w-4" />
                     API Endpoints
                   </h3>
-                  <Badge variant="outline" className="text-[10px]">REST</Badge>
+                  <Badge variant="outline" className="text-[10px]">16 REST routes</Badge>
                 </div>
                 <div className="space-y-2">
                   {[
-                    { method: 'GET', path: '/api/observability', desc: 'Full swarm observability data (dynamic — jittered per call)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
-                    { method: 'GET', path: '/api/observability/traces', desc: '4-agent pipeline traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
-                    { method: 'GET', path: '/api/observability/metrics', desc: 'Swarm pipeline metrics (dynamic — live sample appended)', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
-                    { method: 'GET', path: '/api/observability/logs', desc: 'Agent activity & audit logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-                    { method: 'GET', path: '/api/observability/alerts', desc: 'Swarm alert rules & triggered alerts (dynamic — state transitions)', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
-                    { method: 'GET', path: '/api/observability/topology', desc: '4-agent swarm topology & skills', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+                    { method: 'GET', path: '/api/observability', desc: 'Full swarm data (dynamic — jittered per call)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/topology', desc: '4-agent swarm topology', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+                    { method: 'GET', path: '/api/observability/traces', desc: 'Pipeline traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+                    { method: 'GET', path: '/api/observability/metrics', desc: 'Metrics (dynamic — live sample)', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
                     { method: 'GET', path: '/api/observability/imperatives', desc: 'Imperative registry (PDF §4)', color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
-                    { method: 'GET', path: '/api/observability/violations', desc: 'Prosecutor violations & remediation', color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' },
-                    { method: 'GET', path: '/api/observability/state-machine', desc: 'Compliance state machine (SKILLS §5)', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
-                    { method: 'GET', path: '/api/observability/orchestration', desc: 'Event bus + conflicts (SKILLS §5)', color: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
-                    { method: 'GET', path: '/api/observability/conflicts', desc: 'Regulatory conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
-                    { method: 'GET', path: '/api/observability/audit-chain', desc: 'Immutable append-only audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
-                    { method: 'GET', path: '/api/observability/governance-orchestrator', desc: '22-component HIPAA governance orchestrator (Stage 7)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
-                    { method: 'GET', path: '/api/observability/regenerate', desc: 'Middleware health check (dataset mtime, version)', color: 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300' },
-                    { method: 'POST', path: '/api/observability/regenerate', desc: 'Re-run Python generator, serve fresh dataset (dynamic middleware)', color: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300' },
+                    { method: 'GET', path: '/api/observability/violations', desc: 'Prosecutor violations', color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' },
+                    { method: 'GET', path: '/api/observability/logs', desc: 'Agent activity & audit logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+                    { method: 'GET', path: '/api/observability/alerts', desc: 'Alerts (dynamic — cyclic states)', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+                    { method: 'GET', path: '/api/observability/state-machine', desc: 'State machine', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+                    { method: 'GET', path: '/api/observability/orchestration', desc: 'Event bus + conflicts', color: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
+                    { method: 'GET', path: '/api/observability/conflicts', desc: 'Conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+                    { method: 'GET', path: '/api/observability/audit-chain', desc: 'Hash-linked audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+                    { method: 'GET', path: '/api/observability/governance-orchestrator', desc: '22-component HIPAA governance', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/regenerate', desc: 'Middleware health check', color: 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300' },
+                    { method: 'POST', path: '/api/observability/regenerate', desc: 'Re-run Python generator', color: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300' },
+                    { method: 'GET', path: '/api', desc: 'API root health check', color: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300' },
                   ].map((ep) => (
                     <div key={`${ep.method}-${ep.path}`} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
@@ -505,6 +391,7 @@ export default function Home() {
             </Card>
           </TabsContent>
 
+          {/* Tab panels — conditionally rendered (only the active tab mounts) */}
           <TabsContent value="topology">
             <AgentTopologyPanel agents={data.data.agentTopology} />
           </TabsContent>

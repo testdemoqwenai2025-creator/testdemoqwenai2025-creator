@@ -1,28 +1,32 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getObservabilityData, cacheHeaders } from "@/lib/observability-data";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function getData() {
-  const filePath = path.join(process.cwd(), "public", "observability-data.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
 
 export async function GET() {
   try {
-    const data = await getData();
-    const sm = data.data.stateMachine;
-    return NextResponse.json({
-      ...sm,
-      statistics: {
-        entities: sm.entities.length,
-        totalTransitions: sm.total_transitions,
-        escalations: sm.metrics.escalations,
-        resolutions: sm.metrics.resolutions,
-        distribution: sm.state_distribution,
+    const data = getObservabilityData();
+    const servedAt = new Date().toISOString();
+    const d = data.data as Record<string, unknown>;
+    const sm = d.stateMachine as Record<string, unknown>;
+    const metrics = (sm?.metrics as Record<string, unknown>) ?? {};
+    return NextResponse.json(
+      {
+        ...sm,
+        statistics: {
+          entities: Array.isArray(sm?.entities) ? sm.entities.length : 0,
+          totalTransitions: sm.total_transitions ?? 0,
+          escalations: metrics.escalations ?? 0,
+          resolutions: metrics.resolutions ?? 0,
+          distribution: sm.state_distribution ?? {},
+        },
+        servedAt,
       },
-    });
-  } catch {
-    return NextResponse.json({ error: "Failed to load state machine data" }, { status: 500 });
+      { headers: cacheHeaders(servedAt) },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load state machine data";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

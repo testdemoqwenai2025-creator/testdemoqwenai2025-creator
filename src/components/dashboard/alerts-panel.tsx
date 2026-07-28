@@ -31,6 +31,9 @@ interface TriggeredAlert {
   state: string
   agent: string
   firedAt: string
+  acknowledgedAt?: string
+  resolvedAt?: string
+  durationMinutes?: number
   channel: string
   runbook: string
   labels: { env: string; jurisdiction: string; team: string }

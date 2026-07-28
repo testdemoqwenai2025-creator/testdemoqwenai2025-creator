@@ -1,29 +1,34 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getObservabilityData, cacheHeaders } from "@/lib/observability-data";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function getData() {
-  const filePath = path.join(process.cwd(), "public", "observability-data.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
 
 export async function GET() {
   try {
-    const data = await getData();
-    return NextResponse.json({
-      eventBus: data.data.eventBus,
-      conflicts: data.data.conflicts,
-      statistics: {
-        eventBusTopics: data.data.eventBus.total_topics,
-        eventBusMessages: data.data.eventBus.total_messages,
-        eventBusLag: data.data.eventBus.total_lag,
-        conflictsDetected: data.data.conflicts.total_detected,
-        conflictsResolved: data.data.conflicts.total_resolved,
-        conflictsPending: data.data.conflicts.total_pending,
+    const data = getObservabilityData();
+    const servedAt = new Date().toISOString();
+    const d = data.data as Record<string, unknown>;
+    const eventBus = d.eventBus as Record<string, unknown>;
+    const conflicts = d.conflicts as Record<string, unknown>;
+    return NextResponse.json(
+      {
+        eventBus,
+        conflicts,
+        statistics: {
+          eventBusTopics: eventBus?.total_topics ?? 0,
+          eventBusMessages: eventBus?.total_messages ?? 0,
+          eventBusLag: eventBus?.total_lag ?? 0,
+          conflictsDetected: conflicts?.total_detected ?? 0,
+          conflictsResolved: conflicts?.total_resolved ?? 0,
+          conflictsPending: conflicts?.total_pending ?? 0,
+        },
+        servedAt,
       },
-    });
-  } catch {
-    return NextResponse.json({ error: "Failed to load orchestration data" }, { status: 500 });
+      { headers: cacheHeaders(servedAt) },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load orchestration data";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

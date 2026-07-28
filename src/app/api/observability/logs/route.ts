@@ -1,24 +1,28 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getObservabilityData, cacheHeaders } from "@/lib/observability-data";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function getData() {
-  const filePath = path.join(process.cwd(), "public", "observability-data.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
 
 export async function GET() {
   try {
-    const data = await getData();
-    return NextResponse.json({
-      logs: data.data.logs,
-      statistics: {
-        totalLogs: data.statistics.totalLogs,
-        errorLogs: data.statistics.errorLogs,
+    const data = getObservabilityData();
+    const servedAt = new Date().toISOString();
+    const d = data.data as Record<string, unknown>;
+    const s = data.statistics as Record<string, unknown>;
+    return NextResponse.json(
+      {
+        logs: d.logs,
+        statistics: {
+          totalLogs: s.totalLogs,
+          errorLogs: s.errorLogs,
+        },
+        servedAt,
       },
-    });
-  } catch {
-    return NextResponse.json({ error: "Failed to load logs" }, { status: 500 });
+      { headers: cacheHeaders(servedAt) },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load logs";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

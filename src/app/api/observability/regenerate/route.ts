@@ -1,38 +1,35 @@
 import { NextResponse } from "next/server";
-import { execFileSync } from "child_process";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const execFileAsync = promisify(execFile);
+
 /**
  * POST /api/observability/regenerate
  *
  * Re-runs the Python data generator (scripts/generate_observability_data.py),
- * copies the fresh dataset into public/, and returns the new run_id +
- * lastGeneratedAt timestamp so the frontend can confirm the regeneration.
- *
- * This is the dynamic counterpart to the otherwise-static
- * public/observability-data.json — it lets the dashboard act as a live
- * middle-tier between the Python generator (middleware) and the React
- * frontend, instead of just replaying a frozen snapshot.
+ * copies the fresh dataset into public/, and returns the new runId +
+ * generatedAt timestamp so the frontend can confirm the regeneration.
  */
 export async function POST() {
   const projectRoot = process.cwd();
   const generatorPath = path.join(projectRoot, "scripts", "generate_observability_data.py");
-  const generatedPath = "/home/z/my-project/download/observability-data.json";
+  const generatedPath = path.join(projectRoot, "download", "observability-data.json");
   const publicPath = path.join(projectRoot, "public", "observability-data.json");
 
   try {
-    // 1. Re-run the Python generator (middleware layer).
-    //    -u = unbuffered stdout so we capture progress live
-    //    Generator writes to /home/z/my-project/download/observability-data.json
-    const stdout = execFileSync("python3", ["-u", generatorPath], {
+    // 1. Re-run the Python generator asynchronously (non-blocking).
+    //    -u = unbuffered stdout so we capture progress lines
+    const { stdout, stderr } = await execFileAsync("python3", ["-u", generatorPath], {
       cwd: projectRoot,
       encoding: "utf-8",
       timeout: 60_000,
-      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 2 * 1024 * 1024,
     });
 
     // 2. Copy the freshly-generated dataset into public/ so subsequent
@@ -41,8 +38,12 @@ export async function POST() {
       fs.copyFileSync(generatedPath, publicPath);
     } else {
       return NextResponse.json(
-        { ok: false, error: "Generator ran but output file was not found", stdout },
-        { status: 500 }
+        {
+          ok: false,
+          error: "Generator ran but output file was not found",
+          stderr: stderr.slice(-500),
+        },
+        { status: 500 },
       );
     }
 
@@ -60,11 +61,16 @@ export async function POST() {
       stdout: stdout.split("\n").slice(-20).join("\n"),
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { ok: false, error: "Regeneration failed", detail: message },
-      { status: 500 }
-    );
+    let message = "Regeneration failed";
+    let detail: string | undefined;
+    if (err instanceof Error) {
+      message = err.message;
+      // execFile wraps stderr in the error object
+      if ("stderr" in err && typeof (err as Record<string, unknown>).stderr === "string") {
+        detail = String((err as Record<string, unknown>).stderr).slice(-500);
+      }
+    }
+    return NextResponse.json({ ok: false, error: message, detail }, { status: 500 });
   }
 }
 
@@ -80,20 +86,28 @@ export async function GET() {
     const stat = fs.statSync(publicPath);
     const raw = fs.readFileSync(publicPath, "utf-8");
     const data = JSON.parse(raw);
+    const servedAt = new Date().toISOString();
 
-    return NextResponse.json({
-      ok: true,
-      generatedAt: data.generatedAt,
-      version: data.version,
-      generator: data.generator,
-      fileMtime: stat.mtime.toISOString(),
-      fileSizeBytes: stat.size,
-      middlewareReachable: true,
-    });
-  } catch {
     return NextResponse.json(
-      { ok: false, middlewareReachable: false },
-      { status: 500 }
+      {
+        ok: true,
+        generatedAt: data.generatedAt,
+        version: data.version,
+        generator: data.generator,
+        fileMtime: stat.mtime.toISOString(),
+        fileSizeBytes: stat.size,
+        middlewareReachable: true,
+        servedAt,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+          "X-Served-At": servedAt,
+        },
+      },
     );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Middleware unreachable";
+    return NextResponse.json({ ok: false, middlewareReachable: false, error: message }, { status: 500 });
   }
 }

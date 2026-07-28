@@ -192,7 +192,7 @@ export function OrchestrationPanel({ data }: { data: EventBusData }) {
                     </div>
                     <div>
                       <div className="text-muted-foreground">Consumed</div>
-                      <div className="font-medium">{topic.total_messages - topic.total_lag.toLocaleString()}</div>
+                      <div className="font-medium">{(topic.total_messages - topic.total_lag).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Lag</div>

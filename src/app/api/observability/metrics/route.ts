@@ -1,41 +1,37 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
+import { getObservabilityData, cacheHeaders, jitter } from "@/lib/observability-data";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+
 /**
  * GET /api/observability/metrics
+ *
  * Returns swarm metrics with a small per-load jitter on the continuous KPIs
  * and a fresh "live" sample appended to each metric series, so the charts
  * visibly tick between polls.
+ *
+ * Uses the shared jitter() from observability-data.ts for coherence with
+ * the main /api/observability route.
  */
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), "public", "observability-data.json");
-    const fileContents = fs.readFileSync(filePath, "utf-8");
-    const data = JSON.parse(fileContents);
-    const metrics = data.data.metrics;
-
+    const data = getObservabilityData();
     const servedAt = new Date().toISOString();
-    const jitter = (v: number, pct = 0.05) => {
-      if (!Number.isFinite(v)) return v;
-      const delta = (Math.random() - 0.5) * 2 * pct * v;
-      return Math.max(0, Number((v + delta).toFixed(2)));
-    };
+    const metrics = (data.data as Record<string, unknown>).metrics as
+      | { summary: Record<string, number>; system: Record<string, { data: { timestamp: string; value: number }[] }> }
+      | undefined;
 
     if (metrics?.summary && typeof metrics.summary === "object") {
-      const summary = metrics.summary as Record<string, number>;
       const jittered: Record<string, number> = {};
-      for (const [k, v] of Object.entries(summary)) {
+      for (const [k, v] of Object.entries(metrics.summary)) {
         jittered[k] = typeof v === "number" ? jitter(v) : v;
       }
       metrics.summary = jittered;
     }
 
     if (metrics?.system && typeof metrics.system === "object") {
-      for (const [, series] of Object.entries(metrics.system as Record<string, any>)) {
+      for (const series of Object.values(metrics.system)) {
         if (!series?.data || !Array.isArray(series.data) || series.data.length === 0) continue;
         const last = series.data[series.data.length - 1];
         if (typeof last?.value === "number") {
@@ -47,9 +43,10 @@ export async function GET() {
 
     return NextResponse.json(
       { ...metrics, servedAt, dataSource: "dynamic-jittered" },
-      { headers: { "Cache-Control": "no-store, max-age=0", "X-Served-At": servedAt } }
+      { headers: cacheHeaders(servedAt) },
     );
-  } catch {
-    return NextResponse.json({ error: "Failed to load metrics" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load metrics";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

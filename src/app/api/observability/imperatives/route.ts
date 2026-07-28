@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getObservabilityData, cacheHeaders } from "@/lib/observability-data";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function getData() {
-  const filePath = path.join(process.cwd(), "public", "observability-data.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
 
 export async function GET() {
   try {
-    const data = await getData();
-    return NextResponse.json({
-      imperatives: data.data.imperativeRegistry,
-      statistics: { totalImperatives: data.statistics.totalImperatives },
-    });
-  } catch {
-    return NextResponse.json({ error: "Failed to load imperative registry" }, { status: 500 });
+    const data = getObservabilityData();
+    const servedAt = new Date().toISOString();
+    const d = data.data as Record<string, unknown>;
+    const s = data.statistics as Record<string, unknown>;
+    return NextResponse.json(
+      {
+        imperatives: d.imperativeRegistry,
+        statistics: { totalImperatives: s.totalImperatives },
+        servedAt,
+      },
+      { headers: cacheHeaders(servedAt) },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load imperative registry";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

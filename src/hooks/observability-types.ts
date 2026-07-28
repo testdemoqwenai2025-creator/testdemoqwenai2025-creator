@@ -1,0 +1,61 @@
+export interface ObservabilityData {
+  generatedAt: string;
+  servedAt?: string;
+  generator: string;
+  version: string;
+  project: string;
+  specification: string;
+  architecture: {
+    model: string;
+    agents: string[];
+    pipeline: string;
+    guardrails: string[];
+  };
+  statistics: {
+    totalScenarios: number;
+    totalSpans: number;
+    violationScenarios: number;
+    totalImperatives: number;
+    totalViolations: number;
+    totalLogs: number;
+    errorLogs: number;
+    firingAlerts: number;
+    resolvedAlerts: number;
+    totalAlertRules: number;
+    frameworks: number;
+    regulationsMonitored: number;
+    agents: number;
+    conflictsDetected?: number;
+    conflictsResolved?: number;
+    eventBusTopics?: number;
+    eventBusMessages?: number;
+    auditChainEntries?: number;
+    auditChainIntact?: boolean;
+    stateEntities?: number;
+    stateTransitions?: number;
+    governanceComponents?: number;
+    governanceEvents?: number;
+    governanceAuditEntries?: number;
+    governanceEscalations?: number;
+    governanceBreachAlerts?: number;
+    governanceProvenanceSteps?: number;
+    governanceSyntheticPatients?: number;
+    governanceDrSnapshots?: number;
+    governanceRiskPosture?: string;
+    [key: string]: any;
+  };
+  data: {
+    traces: any[];
+    metrics: { system: Record<string, any>; summary: Record<string, number> };
+    logs: any[];
+    alerting: { rules: any[]; triggeredAlerts: any[] };
+    agentTopology: any[];
+    imperativeRegistry: any[];
+    violations: any[];
+    stateMachine: any;
+    eventBus: any;
+    conflicts: any;
+    auditChain: any;
+    governanceOrchestrator: any;
+  };
+}

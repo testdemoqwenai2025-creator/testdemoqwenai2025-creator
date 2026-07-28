@@ -1,18 +1,28 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getObservabilityData, cacheHeaders } from "@/lib/observability-data";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-async function getData() {
-  const filePath = path.join(process.cwd(), "public", "observability-data.json");
-  const fileContents = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(fileContents);
-}
 
 export async function GET() {
   try {
-    const data = await getData();
-    return NextResponse.json(data.data.auditChain);
-  } catch {
-    return NextResponse.json({ error: "Failed to load audit chain data" }, { status: 500 });
+    const data = getObservabilityData();
+    const servedAt = new Date().toISOString();
+    const d = data.data as Record<string, unknown>;
+    const chain = d.auditChain as Record<string, unknown>;
+    return NextResponse.json(
+      {
+        auditChain: chain,
+        statistics: {
+          totalEntries: chain?.total_entries ?? (Array.isArray(chain?.entries) ? chain.entries.length : 0),
+          chainIntact: chain?.chain_intact ?? true,
+        },
+        servedAt,
+      },
+      { headers: cacheHeaders(servedAt) },
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load audit chain data";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
