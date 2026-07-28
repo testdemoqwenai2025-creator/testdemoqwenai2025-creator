@@ -135,7 +135,100 @@ Ingestion ──feeds──> Legal Analyst ──rules──> Prosecutor ──f
                                           [Human-in-the-Loop]
                                                  │
                                           Feedback Loop ──> Ingestion
+                                                 │
+                                                 ▼
+                              ┌────────────────────────────────────┐
+                              │  HIPAA Governance Orchestrator     │
+                              │  22-component functional layer     │
+                              │  (Stage 7 — see §6 below)          │
+                              └────────────────────────────────────┘
 ```
+
+---
+
+## 6. HIPAA Governance Orchestrator (Stage 7)
+
+A 22-component functional simulation layer for managing AI and data workflows in a healthcare compliance context. Mirrors the prototype at `download/reference/hipaa_governance_orchestrator.py` and surfaces in the observability dashboard as the 13th tab. All 22 components run in sequence per orchestration cycle and emit structured events into a SHA-256 hash-linked audit trail.
+
+### Component Catalog
+
+| # | Component | Category | Role |
+|---|-----------|----------|------|
+| C1 | Identity & Access Management (IAM) | Access Control | Role-based access with purpose-tagged authorization for PHI resources |
+| C2 | Immutable Audit Logging Engine | Auditability | Append-only SHA-256 hash-linked audit log with tamper-evident chaining |
+| C3 | Encryption at Rest / In-Transit (KMS) | Cryptographic Protection | AES-256-GCM with HSM-backed key management and rotation |
+| C4 | Dynamic Data Masking (Safe Harbor) | De-identification | HIPAA Safe Harbor de-identification with PHI field redaction |
+| C5 | Tokenization Engine (FHIR) | De-identification | FHIR-aligned tokenization for PHI identifiers with reversible token vault |
+| C6 | Consent Management & Preference Store | Patient Rights | Patient consent capture, purpose-scoped authorization, revocable preferences |
+| C7 | Retention Policy Enforcer | Lifecycle Management | Automated PHI retention enforcement with archive-then-delete workflows |
+| C8 | Data Classification & Sensitivity Labeller | Data Governance | PHI/PII/Restricted/Public classification with sensitivity scoring |
+| C9 | Boundary Guard (Data Residency / Geo-Fencing) | Cross-Border Transfer | Jurisdiction-aware data transfer controls (GDPR/US/CN rules) |
+| C10 | Anomaly Detection & Breach Alert System | Threat Detection | Threshold-based anomaly detection with breach alert + OCR notification |
+| C11 | Automated Compliance Reporting (OCR/ONC) | Reporting | Quarterly HIPAA report with admin/physical/technical safeguards |
+| C12 | Regulatory Change Ingestion & Versioning | Regulatory Intelligence | Automated ingestion of HHS/OCR/ONC updates with versioned snapshots |
+| C13 | Policy-as-Code Engine (OPA/Rego) | Policy Enforcement | OPA/Rego policy evaluation with declarative access rules |
+| C14 | Multi-Tenancy Isolation Layer | Tenant Isolation | Per-tenant cryptographic isolation with subnet-level separation |
+| C15 | API Rate Limiter & Abuse Shield | API Protection | Per-user/global rate limiting with burst allowance + abuse detection |
+| C16 | Prompt Inspection & Firewall Gatekeeper | AI Safety | Prompt injection detection, jailbreak attempts, PHI leakage prevention |
+| C17 | Context Window Budget Manager | AI Safety | Token budget allocation across prompt/response with truncation strategy |
+| C18 | Non-Deterministic Output Validator | AI Safety | Hallucination detection by grounding AI output against source context |
+| C19 | Human-in-the-Loop Escalation Gate | Governance | Priority-tagged escalation queue with approval/denial workflow |
+| C20 | Explainability & Provenance Tracker | Auditability | Step-by-step provenance chain linking agent actions to data lineage |
+| C21 | Synthetic Data Generation Engine | Privacy Engineering | High-fidelity synthetic patient generation for safe AI training/testing |
+| C22 | Disaster Recovery & State Rehydrator | Resilience | State snapshots with hash-verified rehydration for DR scenarios |
+
+### Per-Run Output Schema
+
+Each orchestration run produces a structured payload with the following top-level keys:
+
+```json
+{
+  "run_id": "3c419f08c306",
+  "start_time": "2026-07-28T17:01:24.998Z",
+  "end_time": "2026-07-28T17:01:25.014Z",
+  "total_components": 22,
+  "components_exercised": 22,
+  "total_events": 37,
+  "component_catalog": [...],          // 22 entries with metadata
+  "components": { ... },               // keyed by component number, multi-event keys like "1a", "6b"
+  "audit_trail": [...],                // 36 SHA-256 hash-linked entries
+  "escalation_events": [...],          // C19 human-in-loop events
+  "breach_alerts": [...],              // C10 anomaly-triggered alerts
+  "provenance_chain": [...],           // C20 step-by-step agent actions
+  "synthetic_patients": { ... },       // C21 high-fidelity PHI-safe records
+  "compliance_report": { ... },        // C11 OCR/ONC quarterly report
+  "dr_snapshots": [...],               // C22 state snapshots with hash verification
+  "categories": { ... },               // component count per category
+  "statistics": { ... }                // aggregate counts
+}
+```
+
+### Skill Proficiency for Stage 7
+
+| Component Cluster | L1 Foundational | L2 Operational | L3 Advanced | L4 Expert |
+|-------------------|-----------------|----------------|-------------|-----------|
+| Access & Crypto (C1, C3, C14) | IAM role checks | KMS key rotation | Per-tenant crypto isolation | Zero-trust architecture |
+| De-identification (C4, C5, C21) | Field redaction | FHIR tokenization | Synthetic data fidelity scoring | Privacy-preserving ML pipelines |
+| Consent & Lifecycle (C6, C7, C8) | Consent capture | Retention enforcement | Sensitivity classification | Cross-jurisdictional retention |
+| Cross-Border & Threat (C9, C10) | Geo-fence rules | Anomaly thresholds | Breach alert orchestration | Predictive threat modeling |
+| AI Safety (C16, C17, C18) | Prompt firewall | Context budgeting | Hallucination grounding | Adversarial output defense |
+| Governance & Audit (C2, C11, C12, C13, C19, C20) | Audit log append | OPA policy eval | OCR report generation | Predictive compliance posture |
+| Resilience (C22) | Snapshot creation | State rehydration | Cross-region DR failover | RTO/RPO optimization |
+
+### Observability Hooks
+
+- **Audit Trail (C2):** Every event from every component is appended to a SHA-256 hash-linked chain. Each entry stores `prev_chain_hash`, `entry_hash`, and `chain_hash` for tamper detection.
+- **Provenance Chain (C20):** Each agent action records its inputs, outputs, timestamp, and a step hash. The chain links Ingestion → Legal Analyst → Output Validator (extensible to all 4 agents).
+- **Escalation Gate (C19):** High-severity findings (e.g., AI hallucination) auto-route to the on-call compliance officer with priority tags and resolution workflow.
+- **Breach Alerts (C10):** Anomalies crossing severity thresholds trigger breach alerts with `ocr_notification_required` flag and a 60-hour notification window per HIPAA §164.408.
+
+### Implementation Reference
+
+- **Prototype:** `download/reference/hipaa_governance_orchestrator.py` (959 lines, standalone Python)
+- **Observability module:** `scripts/governance_orchestrator_stage.py` (~470 lines, integrated with the 7-stage generator)
+- **Dashboard component:** `src/components/dashboard/governance-orchestrator-panel.tsx` (~620 lines, 10 sub-panels)
+- **API endpoint:** `GET /api/observability/governance-orchestrator`
+- **Dashboard tab:** "Governance Orchestrator" (13th tab, Boxes icon)
 
 ---
 
