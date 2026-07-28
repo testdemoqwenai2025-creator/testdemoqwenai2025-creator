@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
   BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
-  ShieldCheck, Database, Layers, Scale, Gavel, Network,
+  ShieldCheck, Database, Layers, Scale, Gavel, Network, GitBranch,
+  Radio, Link2, Workflow,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -18,6 +19,10 @@ import { AlertsPanel } from '@/components/dashboard/alerts-panel'
 import { AgentTopologyPanel } from '@/components/dashboard/agent-topology'
 import { ImperativeRegistryPanel } from '@/components/dashboard/imperative-registry'
 import { ViolationsPanel } from '@/components/dashboard/violations-panel'
+import { StateMachinePanel } from '@/components/dashboard/state-machine-panel'
+import { ConflictsPanel } from '@/components/dashboard/conflicts-panel'
+import { OrchestrationPanel } from '@/components/dashboard/orchestration-panel'
+import { ProvenancePanel } from '@/components/dashboard/provenance-panel'
 
 interface ObservabilityData {
   generatedAt: string
@@ -53,6 +58,10 @@ interface ObservabilityData {
     agentTopology: any[]
     imperativeRegistry: any[]
     violations: any[]
+    stateMachine: any
+    eventBus: any
+    conflicts: any
+    auditChain: any
   }
 }
 
@@ -107,6 +116,14 @@ export default function Home() {
             <Badge variant="outline" className="text-xs hidden md:inline-flex">
               <Shield className="h-3 w-3 mr-1" />
               {data.statistics.frameworks} frameworks
+            </Badge>
+            <Badge variant="outline" className="text-xs hidden lg:inline-flex">
+              <GitBranch className="h-3 w-3 mr-1" />
+              {data.statistics.conflictsDetected} conflicts
+            </Badge>
+            <Badge variant="outline" className="text-xs hidden lg:inline-flex">
+              <Radio className="h-3 w-3 mr-1" />
+              {data.statistics.eventBusTopics} topics
             </Badge>
             {data.statistics.firingAlerts > 0 && (
               <Badge variant="destructive" className="text-xs animate-pulse">
@@ -165,6 +182,22 @@ export default function Home() {
             <TabsTrigger value="alerts" className="text-xs gap-1.5">
               <Shield className="h-3.5 w-3.5" />
               Alerts
+            </TabsTrigger>
+            <TabsTrigger value="state-machine" className="text-xs gap-1.5">
+              <Workflow className="h-3.5 w-3.5" />
+              State Machine
+            </TabsTrigger>
+            <TabsTrigger value="orchestration" className="text-xs gap-1.5">
+              <Radio className="h-3.5 w-3.5" />
+              Orchestration
+            </TabsTrigger>
+            <TabsTrigger value="conflicts" className="text-xs gap-1.5">
+              <GitBranch className="h-3.5 w-3.5" />
+              Conflicts
+            </TabsTrigger>
+            <TabsTrigger value="provenance" className="text-xs gap-1.5">
+              <Link2 className="h-3.5 w-3.5" />
+              Audit Chain
             </TabsTrigger>
           </TabsList>
 
@@ -245,6 +278,13 @@ export default function Home() {
                     { method: 'GET', path: '/api/observability/metrics', desc: 'Swarm pipeline metrics', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
                     { method: 'GET', path: '/api/observability/logs', desc: 'Agent activity & audit logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
                     { method: 'GET', path: '/api/observability/alerts', desc: 'Swarm alert rules & triggered alerts', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+                    { method: 'GET', path: '/api/observability/topology', desc: '4-agent swarm topology & skills', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+                    { method: 'GET', path: '/api/observability/imperatives', desc: 'Imperative registry (PDF §4)', color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
+                    { method: 'GET', path: '/api/observability/violations', desc: 'Prosecutor violations & remediation', color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' },
+                    { method: 'GET', path: '/api/observability/state-machine', desc: 'Compliance state machine (SKILLS §5)', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+                    { method: 'GET', path: '/api/observability/orchestration', desc: 'Event bus + conflicts (SKILLS §5)', color: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
+                    { method: 'GET', path: '/api/observability/conflicts', desc: 'Regulatory conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+                    { method: 'GET', path: '/api/observability/audit-chain', desc: 'Immutable append-only audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
                   ].map((ep) => (
                     <div key={ep.path} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
@@ -294,6 +334,22 @@ export default function Home() {
               rules={data.data.alerting.rules}
               alerts={data.data.alerting.triggeredAlerts}
             />
+          </TabsContent>
+
+          <TabsContent value="state-machine">
+            <StateMachinePanel data={data.data.stateMachine} />
+          </TabsContent>
+
+          <TabsContent value="orchestration">
+            <OrchestrationPanel data={data.data.eventBus} />
+          </TabsContent>
+
+          <TabsContent value="conflicts">
+            <ConflictsPanel data={data.data.conflicts} />
+          </TabsContent>
+
+          <TabsContent value="provenance">
+            <ProvenancePanel data={data.data.auditChain} />
           </TabsContent>
         </Tabs>
       </main>

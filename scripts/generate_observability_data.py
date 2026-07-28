@@ -1221,10 +1221,21 @@ def main():
     print(f"       Imperative registry: {len(imperative_registry)} imperatives with unique IDs")
     print(f"       Violations: {len(violations)} (with full traceability chain)")
 
+    # Stage 6: Orchestration Layer (SKILLS.md §5 + PDF §7)
+    print("[Stage 6] Generating orchestration layer (state machine, event bus, conflicts, audit chain)...")
+    state_machine = generate_state_machine(num_transitions=40)
+    event_bus = generate_event_bus()
+    conflicts = generate_conflicts(num_conflicts=15)
+    audit_chain = generate_audit_chain(num_entries=30)
+    print(f"       State machine: {len(state_machine['entities'])} entities, {state_machine['total_transitions']} transitions")
+    print(f"       Event bus: {event_bus['total_topics']} topics, {event_bus['total_messages']} messages")
+    print(f"       Conflicts: {conflicts['total_detected']} detected, {conflicts['total_resolved']} resolved")
+    print(f"       Audit chain: {audit_chain['total_entries']} entries, integrity={audit_chain['chain_integrity']}")
+
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "generator": "autonomous-compliance-agent-swarm",
-        "version": "3.0.0",
+        "version": "4.0.0",
         "project": "Autonomous Regulatory Compliance Agent Swarm",
         "specification": "Technical Specification v1.0 (July 2026)",
         "architecture": {
@@ -1245,6 +1256,10 @@ def main():
             "agentTopology": agent_topology,
             "imperativeRegistry": imperative_registry,
             "violations": violations,
+            "stateMachine": state_machine,
+            "eventBus": event_bus,
+            "conflicts": conflicts,
+            "auditChain": audit_chain,
         },
         "statistics": {
             "totalScenarios": len(traces),
@@ -1260,6 +1275,14 @@ def main():
             "frameworks": len(set(r["jurisdiction"] for r in REGULATORY_SOURCES)),
             "regulationsMonitored": len(REGULATORY_SOURCES),
             "agents": len(agent_topology),
+            "stateEntities": len(state_machine["entities"]),
+            "stateTransitions": state_machine["total_transitions"],
+            "eventBusTopics": event_bus["total_topics"],
+            "eventBusMessages": event_bus["total_messages"],
+            "conflictsDetected": conflicts["total_detected"],
+            "conflictsResolved": conflicts["total_resolved"],
+            "auditChainEntries": audit_chain["total_entries"],
+            "auditChainIntact": audit_chain["chain_integrity"] == "intact",
         }
     }
 
