@@ -1,0 +1,783 @@
+     1→"""
+     2→Agent Swarm Core — 4-Agent Regulatory Compliance Orchestration
+     3→===============================================================
+     4→Simulates the core agent swarm architecture:
+     5→  1. Ingestion Agent      — Monitors & ingests regulatory changes
+     6→  2. Legal Analyst Agent   — Analyzes regulatory text & extracts requirements
+     7→  3. Prosecutor Agent      — Identifies compliance gaps & risk assessments
+     8→  4. Defender Agent        — Generates remediation plans & control recommendations
+     9→
+    10→Connected via an event bus with distributed tracing (OpenTelemetry-style spans).
+    11→"""
+    12→
+    13→import json
+    14→import uuid
+    15→import hashlib
+    16→import datetime
+    17→import random
+    18→import time
+    19→import copy
+    20→from enum import Enum
+    21→from dataclasses import dataclass, field, asdict
+    22→from typing import Any, Optional
+    23→
+    24→
+    25→class AgentState(Enum):
+    26→    IDLE = "idle"
+    27→    PROCESSING = "processing"
+    28→    WAITING = "waiting"
+    29→    COMPLETED = "completed"
+    30→    ESCALATED = "escalated"
+    31→    FAILED = "failed"
+    32→
+    33→
+    34→class EventStatus(Enum):
+    35→    PUBLISHED = "published"
+    36→    CONSUMED = "consumed"
+    37→    ACKNOWLEDGED = "acknowledged"
+    38→    FAILED = "failed"
+    39→
+    40→
+    41→@dataclass
+    42→class TraceSpan:
+    43→    span_id: str
+    44→    trace_id: str
+    45→    parent_span_id: Optional[str]
+    46→    agent_name: str
+    47→    operation: str
+    48→    start_time: str
+    49→    end_time: Optional[str] = None
+    50→    status: str = "active"
+    51→    attributes: dict = field(default_factory=dict)
+    52→    events: list = field(default_factory=list)
+    53→
+    54→
+    55→@dataclass
+    56→class Event:
+    57→    event_id: str
+    58→    event_type: str
+    59→    source_agent: str
+    60→    payload: dict
+    61→    trace_id: str
+    62→    timestamp: str
+    63→    status: str = "published"
+    64→    correlation_id: Optional[str] = None
+    65→    metadata: dict = field(default_factory=dict)
+    66→
+    67→
+    68→@dataclass
+    69→class AgentMessage:
+    70→    msg_id: str
+    71→    from_agent: str
+    72→    to_agent: str
+    73→    msg_type: str
+    74→    content: dict
+    75→    trace_id: str
+    76→    timestamp: str
+    77→    priority: str = "normal"
+    78→
+    79→
+    80→class EventBus:
+    81→    """Simulated event bus with topics, partitions, and consumer groups."""
+    82→
+    83→    def __init__(self):
+    84→        self.events = []
+    85→        self.topics = {
+    86→            "regulatory.changes": [],
+    87→            "analysis.results": [],
+    88→            "gap.findings": [],
+    89→            "remediation.plans": [],
+    90→            "governance.audit": [],
+    91→            "escalation.requests": [],
+    92→        }
+    93→        self.consumer_groups = {
+    94→            "legal_analysts": ["Legal_Analyst_Agent"],
+    95→            "prosecutors": ["Prosecutor_Agent"],
+    96→            "defenders": ["Defender_Agent"],
+    97→            "auditors": ["Compliance_Orchestrator"],
+    98→        }
+    99→        self.partition_counts = {
+   100→            "regulatory.changes": 3,
+   101→            "analysis.results": 3,
+   102→            "gap.findings": 3,
+   103→            "remediation.plans": 3,
+   104→        }
+   105→        self.metrics = {"published": 0, "consumed": 0, "failed": 0, "total_latency_ms": 0}
+   106→
+   107→    def publish(self, topic, event_type, source_agent, payload, trace_id, correlation_id=None, metadata=None):
+   108→        event_id = f"EVT-{uuid.uuid4().hex[:8].upper()}"
+   109→        event = Event(
+   110→            event_id=event_id, event_type=event_type, source_agent=source_agent,
+   111→            payload=payload, trace_id=trace_id,
+   112→            timestamp=datetime.datetime.now().isoformat(),
+   113→            correlation_id=correlation_id or trace_id,
+   114→            metadata=metadata or {}
+   115→        )
+   116→        if topic in self.topics:
+   117→            partition = random.randint(0, self.partition_counts.get(topic, 1) - 1)
+   118→            event.metadata["partition"] = partition
+   119→            self.topics[topic].append(event)
+   120→        self.events.append(event)
+   121→        self.metrics["published"] += 1
+   122→        return event
+   123→
+   124→    def consume(self, topic, consumer_agent):
+   125→        consumed = []
+   126→        if topic in self.topics:
+   127→            for evt in self.topics[topic]:
+   128→                if evt.status == "published":
+   129→                    evt.status = "consumed"
+   130→                    consumed.append(evt)
+   131→                    self.metrics["consumed"] += 1
+   132→        return consumed
+   133→
+   134→    def get_topic_stats(self):
+   135→        return {topic: {"pending": sum(1 for e in evts if e.status == "published"),
+   136→                        "consumed": sum(1 for e in evts if e.status == "consumed"),
+   137→                        "total": len(evts)}
+   138→                for topic, evts in self.topics.items()}
+   139→
+   140→
+   141→class BaseAgent:
+   142→    """Base class for all swarm agents with tracing support."""
+   143→
+   144→    def __init__(self, name, agent_type, event_bus):
+   145→        self.name = name
+   146→        self.agent_type = agent_type
+   147→        self.event_bus = event_bus
+   148→        self.state = AgentState.IDLE
+   149→        self.spans = []
+   150→        self.messages_sent = []
+   151→        self.messages_received = []
+   152→        self.processed_count = 0
+   153→        self.error_count = 0
+   154→        self.capabilities = []
+   155→        self.current_trace_id = None
+   156→
+   157→    def start_span(self, operation, parent_span_id=None, trace_id=None):
+   158→        tid = trace_id or self.current_trace_id or uuid.uuid4().hex[:16]
+   159→        self.current_trace_id = tid
+   160→        span = TraceSpan(
+   161→            span_id=f"SPAN-{uuid.uuid4().hex[:8].upper()}",
+   162→            trace_id=tid,
+   163→            parent_span_id=parent_span_id,
+   164→            agent_name=self.name,
+   165→            operation=operation,
+   166→            start_time=datetime.datetime.now().isoformat(),
+   167→            attributes={"agent_type": self.agent_type}
+   168→        )
+   169→        self.spans.append(span)
+   170→        return span
+   171→
+   172→    def end_span(self, span, status="completed", result=None):
+   173→        span.end_time = datetime.datetime.now().isoformat()
+   174→        span.status = status
+   175→        if result:
+   176→            span.events.append({"name": "result", "time": span.end_time, "attributes": result})
+   177→        self.state = AgentState.COMPLETED if status == "completed" else AgentState.FAILED
+   178→        return span
+   179→
+   180→    def send_message(self, to_agent, msg_type, content, trace_id, priority="normal"):
+   181→        msg = AgentMessage(
+   182→            msg_id=f"MSG-{uuid.uuid4().hex[:8].upper()}",
+   183→            from_agent=self.name, to_agent=to_agent,
+   184→            msg_type=msg_type, content=content,
+   185→            trace_id=trace_id,
+   186→            timestamp=datetime.datetime.now().isoformat(),
+   187→            priority=priority
+   188→        )
+   189→        self.messages_sent.append(msg)
+   190→        return msg
+   191→
+   192→    def process(self, *args, **kwargs):
+   193→        raise NotImplementedError
+   194→
+   195→    def get_stats(self):
+   196→        return {
+   197→            "name": self.name, "type": self.agent_type,
+   198→            "state": self.state.value,
+   199→            "processed": self.processed_count,
+   200→            "errors": self.error_count,
+   201→            "spans": len(self.spans),
+   202→            "messages_sent": len(self.messages_sent),
+   203→            "messages_received": len(self.messages_received),
+   204→            "capabilities": self.capabilities
+   205→        }
+   206→
+   207→
+   208→class IngestionAgent(BaseAgent):
+   209→    """Agent 1: Monitors regulatory sources and ingests changes."""
+   210→
+   211→    def __init__(self, event_bus):
+   212→        super().__init__("Ingestion_Agent", "ingestion", event_bus)
+   213→        self.monitored_sources = [
+   214→            {"name": "Federal Register", "url": "https://www.federalregister.gov", "frequency": "15min", "active": True},
+   215→            {"name": "HHS/OCR Guidance", "url": "https://www.hhs.gov/ocr", "frequency": "30min", "active": True},
+   216→            {"name": "ONC Standards", "url": "https://www.healthit.gov", "frequency": "1h", "active": True},
+   217→            {"name": "NIST Cybersecurity", "url": "https://www.nist.gov", "frequency": "2h", "active": True},
+   218→            {"name": "State Health Dept", "url": "https://state.health.gov", "frequency": "4h", "active": False},
+   219→        ]
+   220→        self.capabilities = ["web_scraping", "document_parsing", "change_detection", "normalization", "schema_validation"]
+   221→
+   222→    def detect_change(self, source, regulation_title, change_summary, severity, affected_sections):
+   223→        span = self.start_span("detect_regulatory_change")
+   224→        self.state = AgentState.PROCESSING
+   225→        change_id = f"CHG-{uuid.uuid4().hex[:8].upper()}"
+   226→        raw_event = {
+   227→            "change_id": change_id,
+   228→            "source": source,
+   229→            "regulation_title": regulation_title,
+   230→            "change_summary": change_summary,
+   231→            "severity": severity,
+   232→            "affected_sections": affected_sections,
+   233→            "detected_at": datetime.datetime.now().isoformat(),
+   234→            "raw_text_hash": hashlib.sha256(change_summary.encode()).hexdigest()[:16],
+   235→            "document_type": "federal_register_notice",
+   236→        }
+   237→        # Publish to event bus
+   238→        event = self.event_bus.publish(
+   239→            topic="regulatory.changes",
+   240→            event_type="REGULATORY_CHANGE_DETECTED",
+   241→            source_agent=self.name,
+   242→            payload=raw_event,
+   243→            trace_id=self.current_trace_id,
+   244→            metadata={"source_system": source, "severity": severity}
+   245→        )
+   246→        self.processed_count += 1
+   247→        result = {"change_id": change_id, "event_id": event.event_id, "status": "ingested"}
+   248→        self.end_span(span, status="completed", result=result)
+   249→        return raw_event, event
+   250→
+   251→    def process(self, regulatory_changes):
+   252→        """Process multiple regulatory changes."""
+   253→        results = []
+   254→        for change in regulatory_changes:
+   255→            raw, evt = self.detect_change(
+   256→                source=change["source"],
+   257→                regulation_title=change["title"],
+   258→                change_summary=change["summary"],
+   259→                severity=change["severity"],
+   260→                affected_sections=change["sections"]
+   261→            )
+   262→            results.append({"raw": raw, "event": evt})
+   263→        return results
+   264→
+   265→
+   266→class LegalAnalystAgent(BaseAgent):
+   267→    """Agent 2: Analyzes regulatory text and extracts requirements."""
+   268→
+   269→    def __init__(self, event_bus):
+   270→        super().__init__("Legal_Analyst_Agent", "legal_analysis", event_bus)
+   271→        self.analysis_methods = ["statutory_interpretation", "case_law_mapping", "precedent_analysis", "impact_assessment"]
+   272→        self.capabilities = ["nlp_analysis", "requirement_extraction", "obligation_mapping", "risk_classification", "cross_reference_analysis"]
+   273→        self.requirement_templates = [
+   274→            "must_implement", "must_document", "must_train", "must_audit",
+   275→            "must_encrypt", "must_restrict_access", "must_retain", "must_notify"
+   276→        ]
+   277→
+   278→    def analyze(self, regulatory_event):
+   279→        span = self.start_span("analyze_regulatory_change", parent_span_id=None, trace_id=regulatory_event.trace_id)
+   280→        self.state = AgentState.PROCESSING
+   281→        self.messages_received.append(AgentMessage(
+   282→            msg_id=f"MSG-RECV-{uuid.uuid4().hex[:6]}",
+   283→            from_agent=regulatory_event.source_agent, to_agent=self.name,
+   284→            msg_type="regulatory_change", content=regulatory_event.payload,
+   285→            trace_id=regulatory_event.trace_id,
+   286→            timestamp=datetime.datetime.now().isoformat()
+   287→        ))
+   288→
+   289→        # Extract requirements
+   290→        num_requirements = random.randint(3, 8)
+   291→        requirements = []
+   292→        for i in range(num_requirements):
+   293→            req = {
+   294→                "req_id": f"REQ-{uuid.uuid4().hex[:6].upper()}",
+   295→                "type": random.choice(self.requirement_templates),
+   296→                "description": f"Requirement extracted from {regulatory_event.payload.get('regulation_title', 'regulation')}: "
+   297→                              f"Obligation {i+1} related to {random.choice(regulatory_event.payload.get('affected_sections', ['general']))}",
+   298→                "priority": random.choice(["critical", "high", "medium", "low"]),
+   299→                "source_section": random.choice(regulatory_event.payload.get("affected_sections", ["Section 1"])),
+   300→                "compliance_deadline": (datetime.datetime.now() + datetime.timedelta(days=random.randint(30, 180))).strftime("%Y-%m-%d"),
+   301→                "estimated_effort": random.choice(["small", "medium", "large", "xlarge"]),
+   302→            }
+   303→            requirements.append(req)
+   304→
+   305→        analysis_result = {
+   306→            "analysis_id": f"ANL-{uuid.uuid4().hex[:8].upper()}",
+   307→            "source_change_id": regulatory_event.payload.get("change_id"),
+   308→            "regulation": regulatory_event.payload.get("regulation_title"),
+   309→            "severity": regulatory_event.payload.get("severity"),
+   310→            "requirements": requirements,
+   311→            "total_requirements": len(requirements),
+   312→            "critical_count": sum(1 for r in requirements if r["priority"] == "critical"),
+   313→            "analysis_method": random.choice(self.analysis_methods),
+   314→            "confidence_score": round(random.uniform(0.82, 0.97), 3),
+   315→            "cross_references": random.randint(2, 7),
+   316→            "analyzed_at": datetime.datetime.now().isoformat(),
+   317→        }
+   318→
+   319→        # Publish analysis result
+   320→        event = self.event_bus.publish(
+   321→            topic="analysis.results",
+   322→            event_type="ANALYSIS_COMPLETE",
+   323→            source_agent=self.name,
+   324→            payload=analysis_result,
+   325→            trace_id=self.current_trace_id,
+   326→            correlation_id=regulatory_event.event_id,
+   327→            metadata={"requirements_count": len(requirements)}
+   328→        )
+   329→
+   330→        # Notify prosecutor
+   331→        msg = self.send_message(
+   332→            to_agent="Prosecutor_Agent",
+   333→            msg_type="analysis_ready",
+   334→            content={"analysis_id": analysis_result["analysis_id"], "event_id": event.event_id},
+   335→            trace_id=self.current_trace_id,
+   336→            priority="high" if analysis_result["critical_count"] > 0 else "normal"
+   337→        )
+   338→
+   339→        self.processed_count += 1
+   340→        self.end_span(span, status="completed", result={"analysis_id": analysis_result["analysis_id"], "requirements": len(requirements)})
+   341→        return analysis_result, event, msg
+   342→
+   343→
+   344→class ProsecutorAgent(BaseAgent):
+   345→    """Agent 3: Identifies compliance gaps and performs risk assessment."""
+   346→
+   347→    def __init__(self, event_bus):
+   348→        super().__init__("Prosecutor_Agent", "prosecution", event_bus)
+   349→        self.current_controls = [
+   350→            {"control_id": "CTL-001", "name": "Access Control Policy", "status": "active", "coverage": "PHI_access"},
+   351→            {"control_id": "CTL-002", "name": "Encryption at Rest", "status": "active", "coverage": "data_at_rest"},
+   352→            {"control_id": "CTL-003", "name": "Audit Logging", "status": "active", "coverage": "audit_trail"},
+   353→            {"control_id": "CTL-004", "name": "Breach Notification", "status": "partial", "coverage": "incident_response"},
+   354→            {"control_id": "CTL-005", "name": "Workforce Training", "status": "active", "coverage": "training"},
+   355→            {"control_id": "CTL-006", "name": "Business Associate Agreements", "status": "active", "coverage": "baa"},
+   356→            {"control_id": "CTL-007", "name": "Risk Analysis", "status": "outdated", "coverage": "risk_mgmt"},
+   357→            {"control_id": "CTL-008", "name": "Minimum Necessary Standard", "status": "missing", "coverage": "data_minimization"},
+   358→        ]
+   359→        self.capabilities = ["gap_analysis", "risk_assessment", "control_mapping", "evidence_review", "compliance_scoring"]
+   360→
+   361→    def identify_gaps(self, analysis_event):
+   362→        span = self.start_span("identify_compliance_gaps", trace_id=analysis_event.trace_id)
+   363→        self.state = AgentState.PROCESSING
+   364→        self.messages_received.append(AgentMessage(
+   365→            msg_id=f"MSG-RECV-{uuid.uuid4().hex[:6]}",
+   366→            from_agent=analysis_event.source_agent, to_agent=self.name,
+   367→            msg_type="analysis_result", content=analysis_event.payload,
+   368→            trace_id=analysis_event.trace_id,
+   369→            timestamp=datetime.datetime.now().isoformat()
+   370→        ))
+   371→
+   372→        analysis = analysis_event.payload
+   373→        requirements = analysis.get("requirements", [])
+   374→
+   375→        gaps = []
+   376→        for req in requirements:
+   377→            # Simulate gap detection: higher priority requirements more likely to have gaps
+   378→            gap_probability = {"critical": 0.7, "high": 0.5, "medium": 0.3, "low": 0.15}[req["priority"]]
+   379→            if random.random() < gap_probability:
+   380→                affected_control = random.choice(self.current_controls)
+   381→                gap = {
+   382→                    "gap_id": f"GAP-{uuid.uuid4().hex[:6].upper()}",
+   383→                    "requirement_id": req["req_id"],
+   384→                    "requirement_type": req["type"],
+   385→                    "description": f"Gap identified: {req['type']} obligation not fully covered by current control '{affected_control['name']}' ({affected_control['status']})",
+   386→                    "severity": req["priority"],
+   387→                    "affected_control": affected_control["control_id"],
+   388→                    "control_status": affected_control["status"],
+   389→                    "risk_score": round(random.uniform(0.4, 0.95), 2),
+   390→                    "evidence_status": random.choice(["insufficient", "missing", "outdated", "partial"]),
+   391→                    "remediation_complexity": random.choice(["low", "medium", "high", "critical"]),
+   392→                }
+   393→                gaps.append(gap)
+   394→
+   395→        # Overall compliance score
+   396→        total_reqs = len(requirements)
+   397→        gapped = len(gaps)
+   398→        compliance_score = round((1 - gapped / max(total_reqs, 1)) * 100, 1)
+   399→
+   400→        # Risk assessment
+   401→        risk_levels = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+   402→        max_risk = max([risk_levels.get(g["severity"], 1) for g in gaps], default=0)
+   403→        avg_risk = round(sum(g["risk_score"] for g in gaps) / max(len(gaps), 1), 3) if gaps else 0
+   404→
+   405→        gap_report = {
+   406→            "report_id": f"GAP-{uuid.uuid4().hex[:8].upper()}",
+   407→            "source_analysis_id": analysis.get("analysis_id"),
+   408→            "total_requirements": total_reqs,
+   409→            "gaps_found": gapped,
+   410→            "compliance_score": compliance_score,
+   411→            "overall_risk_level": ["LOW", "MODERATE", "HIGH", "CRITICAL"][min(max_risk - 1, 3)] if gaps else "COMPLIANT",
+   412→            "average_risk_score": avg_risk,
+   413→            "gaps": gaps,
+   414→            "risk_breakdown": {sev: sum(1 for g in gaps if g["severity"] == sev) for sev in ["critical", "high", "medium", "low"]},
+   415→            "prosecuted_at": datetime.datetime.now().isoformat(),
+   416→        }
+   417→
+   418→        event = self.event_bus.publish(
+   419→            topic="gap.findings",
+   420→            event_type="GAPS_IDENTIFIED",
+   421→            source_agent=self.name,
+   422→            payload=gap_report,
+   423→            trace_id=self.current_trace_id,
+   424→            correlation_id=analysis_event.event_id,
+   425→            metadata={"gap_count": gapped, "risk_level": gap_report["overall_risk_level"]}
+   426→        )
+   427→
+   428→        msg = self.send_message(
+   429→            to_agent="Defender_Agent",
+   430→            msg_type="gaps_ready",
+   431→            content={"report_id": gap_report["report_id"], "event_id": event.event_id, "urgent": max_risk >= 3},
+   432→            trace_id=self.current_trace_id,
+   433→            priority="critical" if max_risk >= 4 else ("high" if max_risk >= 3 else "normal")
+   434→        )
+   435→
+   436→        self.processed_count += 1
+   437→        self.end_span(span, status="completed", result={"gaps_found": gapped, "compliance_score": compliance_score})
+   438→        return gap_report, event, msg
+   439→
+   440→
+   441→class DefenderAgent(BaseAgent):
+   442→    """Agent 4: Generates remediation plans and control recommendations."""
+   443→
+   444→    def __init__(self, event_bus):
+   445→        super().__init__("Defender_Agent", "defense", event_bus)
+   446→        self.capabilities = ["remediation_planning", "control_design", "policy_drafting", "implementation_roadmap", "cost_estimation"]
+   447→        self.remediation_strategies = {
+   448→            "critical": ["immediate_implementation", "emergency_policy_update", "escalate_to_ciso"],
+   449→            "high": ["scheduled_implementation", "policy_revision", "control_enhancement"],
+   450→            "medium": ["planned_improvement", "documentation_update", "training_deployment"],
+   451→            "low": ["monitor_and_review", "best_practice_adoption", "future_consideration"],
+   452→        }
+   453→
+   454→    def generate_remediation(self, gap_event):
+   455→        span = self.start_span("generate_remediation_plan", trace_id=gap_event.trace_id)
+   456→        self.state = AgentState.PROCESSING
+   457→        self.messages_received.append(AgentMessage(
+   458→            msg_id=f"MSG-RECV-{uuid.uuid4().hex[:6]}",
+   459→            from_agent=gap_event.source_agent, to_agent=self.name,
+   460→            msg_type="gap_report", content=gap_event.payload,
+   461→            trace_id=gap_event.trace_id,
+   462→            timestamp=datetime.datetime.now().isoformat()
+   463→        ))
+   464→
+   465→        gap_report = gap_event.payload
+   466→        gaps = gap_report.get("gaps", [])
+   467→
+   468→        remediation_steps = []
+   469→        total_estimated_cost = 0
+   470→        total_effort_days = 0
+   471→
+   472→        for i, gap in enumerate(gaps):
+   473→            severity = gap["severity"]
+   474→            strategies = self.remediation_strategies.get(severity, self.remediation_strategies["medium"])
+   475→            strategy = random.choice(strategies)
+   476→            effort_days = {"critical": random.randint(5, 30), "high": random.randint(10, 45),
+   477→                          "medium": random.randint(3, 20), "low": random.randint(1, 10)}[severity]
+   478→            cost = {"critical": random.randint(50000, 200000), "high": random.randint(20000, 100000),
+   479→                   "medium": random.randint(5000, 30000), "low": random.randint(1000, 10000)}[severity]
+   480→
+   481→            step = {
+   482→                "step_id": f"REM-{uuid.uuid4().hex[:6].upper()}",
+   483→                "gap_id": gap["gap_id"],
+   484→                "order": i + 1,
+   485→                "strategy": strategy,
+   486→                "action_description": f"Implement {strategy.replace('_', ' ')} for gap in {gap['requirement_type']} affecting control {gap['affected_control']}",
+   487→                "assigned_team": random.choice(["Compliance", "Engineering", "Security", "Legal", "Operations"]),
+   488→                "priority": severity,
+   489→                "effort_days": effort_days,
+   490→                "estimated_cost_usd": cost,
+   491→                "deadline": (datetime.datetime.now() + datetime.timedelta(days=effort_days * 2)).strftime("%Y-%m-%d"),
+   492→                "dependencies": [f"REM-{uuid.uuid4().hex[:6].upper()}" for _ in range(random.randint(0, 2))] if i > 0 else [],
+   493→                "status": "planned",
+   494→                "verification_method": random.choice(["audit_review", "automated_test", "manual_inspection", "compliance_assessment"]),
+   495→            }
+   496→            remediation_steps.append(step)
+   497→            total_estimated_cost += cost
+   498→            total_effort_days += effort_days
+   499→
+   500→        # Sort by priority
+   501→        priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+   502→        remediation_steps.sort(key=lambda s: priority_order.get(s["priority"], 4))
+   503→        for i, step in enumerate(remediation_steps):
+   504→            step["order"] = i + 1
+   505→
+   506→        remediation_plan = {
+   507→            "plan_id": f"RMP-{uuid.uuid4().hex[:8].upper()}",
+   508→            "source_gap_report_id": gap_report.get("report_id"),
+   509→            "source_analysis_id": gap_report.get("source_analysis_id"),
+   510→            "total_gaps_addressed": len(gaps),
+   511→            "total_steps": len(remediation_steps),
+   512→            "total_estimated_cost_usd": total_estimated_cost,
+   513→            "total_effort_days": total_effort_days,
+   514→            "remediation_steps": remediation_steps,
+   515→            "risk_reduction_target": round(gap_report.get("average_risk_score", 0) * 0.7, 3),
+   516→            "compliance_target_score": min(100, round(gap_report.get("compliance_score", 0) + (100 - gap_report.get("compliance_score", 0)) * 0.8, 1)),
+   517→            "created_at": datetime.datetime.now().isoformat(),
+   518→        }
+   519→
+   520→        event = self.event_bus.publish(
+   521→            topic="remediation.plans",
+   522→            event_type="REMEDIATION_PLAN_READY",
+   523→            source_agent=self.name,
+   524→            payload=remediation_plan,
+   525→            trace_id=self.current_trace_id,
+   526→            correlation_id=gap_event.event_id,
+   527→            metadata={"steps": len(remediation_steps), "cost": total_estimated_cost}
+   528→        )
+   529→
+   530→        # Escalate if critical gaps
+   531→        critical_gaps = [g for g in gaps if g["severity"] == "critical"]
+   532→        if critical_gaps:
+   533→            esc_msg = self.send_message(
+   534→                to_agent="Compliance_Orchestrator",
+   535→                msg_type="escalation_required",
+   536→                content={"plan_id": remediation_plan["plan_id"], "critical_gaps": len(critical_gaps),
+   537→                         "total_cost": total_estimated_cost},
+   538→                trace_id=self.current_trace_id,
+   539→                priority="critical"
+   540→            )
+   541→        else:
+   542→            esc_msg = None
+   543→
+   544→        self.processed_count += 1
+   545→        self.end_span(span, status="completed", result={"plan_id": remediation_plan["plan_id"], "steps": len(remediation_steps)})
+   546→        return remediation_plan, event, esc_msg
+   547→
+   548→
+   549→class SwarmOrchestrator:
+   550→    """Orchestrates the 4-agent swarm through a complete regulatory compliance workflow."""
+   551→
+   552→    def __init__(self):
+   553→        self.event_bus = EventBus()
+   554→        self.agents = {
+   555→            "ingestion": IngestionAgent(self.event_bus),
+   556→            "legal_analyst": LegalAnalystAgent(self.event_bus),
+   557→            "prosecutor": ProsecutorAgent(self.event_bus),
+   558→            "defender": DefenderAgent(self.event_bus),
+   559→        }
+   560→        self.run_id = uuid.uuid4().hex[:12]
+   561→        self.start_time = datetime.datetime.now().isoformat()
+   562→        self.workflow_steps = []
+   563→        self.scenarios_run = []
+   564→
+   565→    def run_scenario(self, scenario_name, regulatory_changes):
+   566→        """Run a complete scenario: Ingest -> Analyze -> Prosecute -> Defend."""
+   567→        scenario_trace_id = uuid.uuid4().hex[:16]
+   568→        scenario_result = {
+   569→            "scenario_name": scenario_name,
+   570→            "trace_id": scenario_trace_id,
+   571→            "started_at": datetime.datetime.now().isoformat(),
+   572→            "phases": {},
+   573→        }
+   574→
+   575→        # Phase 1: Ingestion
+   576→        print(f"\n{'='*60}")
+   577→        print(f"SCENARIO: {scenario_name}")
+   578→        print(f"Trace ID: {scenario_trace_id}")
+   579→        print(f"{'='*60}")
+   580→
+   581→        print(f"\n--- PHASE 1: INGESTION ---")
+   582→        ingestion_agent = self.agents["ingestion"]
+   583→        ingestion_results = ingestion_agent.process(regulatory_changes)
+   584→        for r in ingestion_results:
+   585→            print(f"  Ingested: {r['raw']['change_id']} - {r['raw']['regulation_title'][:60]}...")
+   586→            print(f"    Event: {r['event'].event_id} -> topic: regulatory.changes")
+   587→        scenario_result["phases"]["ingestion"] = {
+   588→            "changes_ingested": len(ingestion_results),
+   589→            "events_published": len(ingestion_results),
+   590→        }
+   591→
+   592→        # Phase 2: Legal Analysis
+   593→        print(f"\n--- PHASE 2: LEGAL ANALYSIS ---")
+   594→        legal_agent = self.agents["legal_analyst"]
+   595→        # Consume events from ingestion
+   596→        pending_changes = self.event_bus.consume("regulatory.changes", legal_agent.name)
+   597→        analysis_results = []
+   598→        for evt in pending_changes:
+   599→            analysis, a_event, a_msg = legal_agent.analyze(evt)
+   600→            analysis_results.append({"analysis": analysis, "event": a_event, "message": a_msg})
+   601→            print(f"  Analyzed: {analysis['analysis_id']} - {len(analysis['requirements'])} requirements extracted")
+   602→            print(f"    Critical: {analysis['critical_count']} | Confidence: {analysis['confidence_score']}")
+   603→            print(f"    Event: {a_event.event_id} -> topic: analysis.results")
+   604→            print(f"    Message: {a_msg.msg_id} -> {a_msg.to_agent}")
+   605→        scenario_result["phases"]["legal_analysis"] = {
+   606→            "analyses_completed": len(analysis_results),
+   607→            "total_requirements": sum(a["analysis"]["total_requirements"] for a in analysis_results),
+   608→            "critical_requirements": sum(a["analysis"]["critical_count"] for a in analysis_results),
+   609→        }
+   610→
+   611→        # Phase 3: Prosecution (Gap Analysis)
+   612→        print(f"\n--- PHASE 3: PROSECUTION (GAP ANALYSIS) ---")
+   613→        prosecutor_agent = self.agents["prosecutor"]
+   614→        pending_analyses = self.event_bus.consume("analysis.results", prosecutor_agent.name)
+   615→        gap_results = []
+   616→        for evt in pending_analyses:
+   617→            gap_report, g_event, g_msg = prosecutor_agent.identify_gaps(evt)
+   618→            gap_results.append({"report": gap_report, "event": g_event, "message": g_msg})
+   619→            print(f"  Prosecuted: {gap_report['report_id']} - {gap_report['gaps_found']} gaps found")
+   620→            print(f"    Compliance Score: {gap_report['compliance_score']}% | Risk: {gap_report['overall_risk_level']}")
+   621→            print(f"    Risk Breakdown: {gap_report['risk_breakdown']}")
+   622→            print(f"    Event: {g_event.event_id} -> topic: gap.findings")
+   623→            print(f"    Message: {g_msg.msg_id} -> {g_msg.to_agent}")
+   624→        scenario_result["phases"]["prosecution"] = {
+   625→            "gap_reports": len(gap_results),
+   626→            "total_gaps": sum(g["report"]["gaps_found"] for g in gap_results),
+   627→            "avg_compliance_score": round(sum(g["report"]["compliance_score"] for g in gap_results) / max(len(gap_results), 1), 1),
+   628→            "risk_levels": list(set(g["report"]["overall_risk_level"] for g in gap_results)),
+   629→        }
+   630→
+   631→        # Phase 4: Defense (Remediation)
+   632→        print(f"\n--- PHASE 4: DEFENSE (REMEDIATION) ---")
+   633→        defender_agent = self.agents["defender"]
+   634→        pending_gaps = self.event_bus.consume("gap.findings", defender_agent.name)
+   635→        remediation_results = []
+   636→        for evt in pending_gaps:
+   637→            plan, r_event, r_msg = defender_agent.generate_remediation(evt)
+   638→            remediation_results.append({"plan": plan, "event": r_event, "escalation": r_msg})
+   639→            print(f"  Defended: {plan['plan_id']} - {plan['total_steps']} remediation steps")
+   640→            print(f"    Total Cost: ${plan['total_estimated_cost_usd']:,} | Effort: {plan['total_effort_days']} days")
+   641→            print(f"    Compliance Target: {plan['compliance_target_score']}% | Risk Reduction: {plan['risk_reduction_target']}")
+   642→            print(f"    Event: {r_event.event_id} -> topic: remediation.plans")
+   643→            if r_msg:
+   644→                print(f"    ESCALATION: {r_msg.msg_id} -> {r_msg.to_agent} [{r_msg.priority}]")
+   645→
+   646→            # Show top 3 remediation steps
+   647→            for step in plan["remediation_steps"][:3]:
+   648→                print(f"      Step {step['order']}: [{step['priority'].upper()}] {step['action_description'][:80]}...")
+   649→                print(f"        Team: {step['assigned_team']} | Cost: ${step['estimated_cost_usd']:,} | Days: {step['effort_days']}")
+   650→            if len(plan["remediation_steps"]) > 3:
+   651→                print(f"      ... and {len(plan['remediation_steps']) - 3} more steps")
+   652→
+   653→        scenario_result["phases"]["defense"] = {
+   654→            "plans_generated": len(remediation_results),
+   655→            "total_steps": sum(r["plan"]["total_steps"] for r in remediation_results),
+   656→            "total_cost": sum(r["plan"]["total_estimated_cost_usd"] for r in remediation_results),
+   657→            "total_effort_days": sum(r["plan"]["total_effort_days"] for r in remediation_results),
+   658→            "escalations": sum(1 for r in remediation_results if r["escalation"]),
+   659→        }
+   660→
+   661→        scenario_result["ended_at"] = datetime.datetime.now().isoformat()
+   662→        scenario_result["detailed_results"] = {
+   663→            "ingestion": [{"raw": r["raw"], "event_id": r["event"].event_id} for r in ingestion_results],
+   664→            "analyses": [{"analysis": r["analysis"], "event_id": r["event"].event_id, "msg_id": r["message"].msg_id} for r in analysis_results],
+   665→            "gap_reports": [{"report": r["report"], "event_id": r["event"].event_id, "msg_id": r["message"].msg_id} for r in gap_results],
+   666→            "remediations": [{"plan": r["plan"], "event_id": r["event"].event_id, "escalation_id": r["escalation"].msg_id if r["escalation"] else None} for r in remediation_results],
+   667→        }
+   668→
+   669→        self.scenarios_run.append(scenario_result)
+   670→        return scenario_result
+   671→
+   672→    def get_full_results(self):
+   673→        """Compile complete orchestration results."""
+   674→        all_spans = []
+   675→        for agent in self.agents.values():
+   676→            for span in agent.spans:
+   677→                all_spans.append({
+   678→                    "span_id": span.span_id, "trace_id": span.trace_id,
+   679→                    "parent_span_id": span.parent_span_id,
+   680→                    "agent_name": span.agent_name, "operation": span.operation,
+   681→                    "start_time": span.start_time, "end_time": span.end_time,
+   682→                    "status": span.status, "attributes": span.attributes,
+   683→                })
+   684→
+   685→        all_messages = []
+   686→        for agent in self.agents.values():
+   687→            for msg in agent.messages_sent:
+   688→                all_messages.append({
+   689→                    "msg_id": msg.msg_id, "from_agent": msg.from_agent,
+   690→                    "to_agent": msg.to_agent, "msg_type": msg.msg_type,
+   691→                    "content": msg.content, "trace_id": msg.trace_id,
+   692→                    "timestamp": msg.timestamp, "priority": msg.priority,
+   693→                })
+   694→
+   695→        return {
+   696→            "run_id": self.run_id,
+   697→            "start_time": self.start_time,
+   698→            "end_time": datetime.datetime.now().isoformat(),
+   699→            "agents": {name: agent.get_stats() for name, agent in self.agents.items()},
+   700→            "event_bus": {
+   701→                "total_events": len(self.event_bus.events),
+   702→                "topic_stats": self.event_bus.get_topic_stats(),
+   703→                "metrics": self.event_bus.metrics,
+   704→                "consumer_groups": self.event_bus.consumer_groups,
+   705→            },
+   706→            "traces": all_spans,
+   707→            "messages": all_messages,
+   708→            "scenarios": self.scenarios_run,
+   709→            "event_log": [{
+   710→                "event_id": e.event_id, "event_type": e.event_type,
+   711→                "source_agent": e.source_agent, "topic": next((t for t, evts in self.event_bus.topics.items() if e in evts), "unknown"),
+   712→                "trace_id": e.trace_id, "timestamp": e.timestamp,
+   713→                "status": e.status, "correlation_id": e.correlation_id,
+   714→                "payload_summary": {k: v for k, v in e.payload.items() if k in ["change_id", "analysis_id", "report_id", "plan_id", "regulation_title", "gaps_found", "total_requirements", "compliance_score", "total_steps"]}
+   715→            } for e in self.event_bus.events],
+   716→        }
+   717→
+   718→
+   719→def main():
+   720→    print("\n" + "#" * 60)
+   721→    print("# AGENT SWARM CORE — REGULATORY COMPLIANCE ORCHESTRATION")
+   722→    print("# 4-Agent Event-Driven Architecture Simulation")
+   723→    print("#" * 60)
+   724→
+   725→    orchestrator = SwarmOrchestrator()
+   726→
+   727→    # Scenario 1: HIPAA Privacy Rule Update
+   728→    scenario1_changes = [
+   729→        {
+   730→            "source": "Federal Register",
+   731→            "title": "HIPAA Privacy Rule Modification — Enhanced Patient Access Rights (2025 Amendment)",
+   732→            "summary": "The Department of Health and Human Services proposes modifications to the HIPAA Privacy Rule to strengthen patients' rights to access their own health information. Key changes include: reduced response time from 30 to 15 days for record requests, mandatory electronic format delivery, expanded definition of electronic health information, and new penalties for non-compliance exceeding $2 million per violation category.",
+   733→            "severity": "high",
+   734→            "sections": ["Section 164.524 (Access)", "Section 164.530 (Compliance)", "Section 1176 (Penalties)"]
+   735→        },
+   736→    ]
+   737→    orchestrator.run_scenario("HIPAA Privacy Rule — Patient Access Enhancement", scenario1_changes)
+   738→
+   739→    # Scenario 2: Multi-Regulation Update
+   740→    scenario2_changes = [
+   741→        {
+   742→            "source": "ONC Standards",
+   743→            "title": "21st Century Cures Act — Information Blocking Rule v3.0",
+   744→            "summary": "Updated information blocking regulations with new exceptions for privacy-protecting technologies, expanded API requirements for patient-facing applications, and revised anti-information blocking provisions affecting healthcare providers and health IT developers.",
+   745→            "severity": "high",
+   746→            "sections": ["Section 400.200 (Prohibited Practices)", "Section 400.202 (Exceptions)", "Section 400.204 (API Requirements)"]
+   747→        },
+   748→        {
+   749→            "source": "HHS/OCR Guidance",
+   750→            "title": "OCR Enforcement Guidance — Ransomware and HIPAA (2025 Update)",
+   751→            "summary": "New enforcement guidance addressing ransomware attacks affecting covered entities and business associates. Establishes updated breach notification timelines (now 24 hours for ransomware incidents), mandatory incident response plan requirements, and enhanced safeguard obligations for network segmentation and backup encryption.",
+   752→            "severity": "critical",
+   753→            "sections": ["Section 164.308 (Security Management)", "Section 164.310 (Physical Safeguards)", "Section 164.312 (Technical Safeguards)"]
+   754→        },
+   755→    ]
+   756→    orchestrator.run_scenario("Multi-Regulation Update — Cures Act + Ransomware Guidance", scenario2_changes)
+   757→
+   758→    # Print summary
+   759→    results = orchestrator.get_full_results()
+   760→    print(f"\n{'#'*60}")
+   761→    print(f"# SWARM ORCHESTRATION COMPLETE")
+   762→    print(f"# Run ID: {results['run_id']}")
+   763→    print(f"# Events Published: {results['event_bus']['metrics']['published']}")
+   764→    print(f"# Events Consumed: {results['event_bus']['metrics']['consumed']}")
+   765→    print(f"# Traces: {len(results['traces'])}")
+   766→    print(f"# Messages: {len(results['messages'])}")
+   767→    print(f"# Scenarios: {len(results['scenarios'])}")
+   768→    for name, stats in results["agents"].items():
+   769→        print(f"#   {stats['name']}: {stats['processed']} processed, {stats['spans']} spans, {stats['messages_sent']} msgs sent")
+   770→    print(f"#" * 60)
+   771→
+   772→    # Save output
+   773→    output_path = "/home/z/my-project/download/agent_swarm_output.json"
+   774→    with open(output_path, "w") as f:
+   775→        json.dump(results, f, indent=2, default=str)
+   776→    print(f"\nOutput saved to: {output_path}")
+   777→
+   778→    return results
+   779→
+   780→
+   781→if __name__ == "__main__":
+   782→    main()
+   783→
