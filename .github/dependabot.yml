@@ -1,0 +1,62 @@
+# =============================================================================
+# Dependabot Configuration — Automated dependency updates
+# =============================================================================
+version: 2
+
+updates:
+  # ── Bun (JavaScript) dependencies ──────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automated"
+    review-from-default-branch: true
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+    # Group minor/patch updates to reduce PR noise
+    groups:
+      # Core framework
+      next-js:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+      # UI components
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Data/state libs
+      data-libs:
+        patterns:
+          - "recharts"
+          - "@tanstack/*"
+          - "zustand"
+          - "zod"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "ci(deps)"

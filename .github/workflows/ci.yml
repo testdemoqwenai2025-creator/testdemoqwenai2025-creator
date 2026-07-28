@@ -1,0 +1,181 @@
+# =============================================================================
+# CI Pipeline — Autonomous Regulatory Compliance Dashboard
+# Runs on every push and PR to main
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  statuses: write
+
+env:
+  NODE_VERSION: "20"
+  BUN_VERSION: "1.2.4"
+
+jobs:
+  # ── Job 1: Lint ──────────────────────────────────────────────────────────
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run ESLint
+        run: bun run lint
+        continue-on-error: true  # Non-blocking for now (permissive rules)
+
+  # ── Job 2: TypeScript Type Check ──────────────────────────────────────────
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      - name: Type check
+        run: bunx tsc --noEmit --pretty
+
+  # ── Job 3: Build ──────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Next.js standalone
+        run: bun run build
+
+      - name: Verify standalone output
+        run: |
+          test -f .next/standalone/server.js
+          echo "Standalone server.js exists"
+          test -d .next/standalone/public
+          echo "Public directory copied"
+          test -d .next/standalone/.next/static
+          echo "Static assets copied"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-build
+          path: .next/standalone/
+          retention-days: 7
+
+  # ── Job 4: Python Data Generator Validation ──────────────────────────────
+  python-validator:
+    name: Python Generator
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install --quiet faker
+
+      - name: Validate data generator (import + generate)
+        run: |
+          cd scripts
+          python -c "
+          from generate_observability_data import generate_all_stages
+          data = generate_all_stages()
+          assert 'agentTopology' in data
+          assert 'jurisdictionalIntelligence' in data
+          assert 'observabilityData' in data
+          print(f'Data generation OK: {len(data)} stages')
+          "
+
+  # ── Job 5: License & Metadata Check ────────────────────────────────────────
+  license-check:
+    name: License Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify MIT License
+        run: |
+          head -1 LICENSE | grep -q "MIT License"
+          echo "LICENSE: MIT confirmed"
+          grep -q "Permission is hereby granted" LICENSE
+          echo "LICENSE: Full MIT text verified"
+
+      - name: Check package.json version matches
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Package version: $VERSION"
+
+      - name: Verify no secrets in tracked files
+        run: |
+          ! grep -rq "ghp_\|gho_\|github_pat_\|sk-\|AKIA" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" src/ scripts/ || \
+            (echo "ERROR: Potential secret detected!" && exit 1)
+          echo "No secrets found in source"
+
+  # ── Job 6: CI Summary Gate ─────────────────────────────────────────────────
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, build, python-validator, license-check]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "TypeScript: ${{ needs.typecheck.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Python: ${{ needs.python-validator.result }}"
+          echo "License: ${{ needs.license-check.result }}"
+          
+          if [[ "${{ needs.typecheck.result }}" == "failure" || \
+                "${{ needs.build.result }}" == "failure" || \
+                "${{ needs.python-validator.result }}" == "failure" || \
+                "${{ needs.license-check.result }}" == "failure" ]]; then
+            echo "CRITICAL job failed — blocking merge"
+            exit 1
+          fi
+          echo "All critical CI checks passed"

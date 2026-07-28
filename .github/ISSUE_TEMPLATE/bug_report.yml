@@ -1,0 +1,31 @@
+---
+name: Bug Report
+about: Report a bug or unexpected behavior
+title: "[BUG] "
+labels: bug
+assignees: ""
+---
+
+**Describe the bug**
+A clear description of what the bug is.
+
+**To reproduce**
+Steps to reproduce the behavior:
+1. Start the dashboard: `./start.sh 3000`
+2. Navigate to `[tab]`
+3. Observe the error
+
+**Expected behavior**
+What you expected to happen.
+
+**Environment**
+- OS: [e.g., Ubuntu 22.04, macOS 14]
+- Node.js version: [e.g., 20.11]
+- Browser: [e.g., Chrome 125]
+- Version: [e.g., v8.0.0]
+
+**Screenshots / Logs**
+If applicable, add screenshots or paste console logs.
+
+**Additional context**
+Any other context about the problem.
