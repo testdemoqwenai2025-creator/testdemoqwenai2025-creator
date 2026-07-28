@@ -58,5 +58,6 @@ export interface ObservabilityData {
     auditChain: any;
     governanceOrchestrator: any;
     complianceScore: any;
+    predictiveIntelligence: any;
   };
 }

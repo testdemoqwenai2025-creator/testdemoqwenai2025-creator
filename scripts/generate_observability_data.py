@@ -32,6 +32,7 @@ if SCRIPTS_DIR not in sys.path:
 
 from governance_orchestrator_stage import generate_governance_orchestrator
 from compliance_score_stage import generate_compliance_score
+from predictive_intelligence_stage import generate_predictive_intelligence
 
 SEED = 42
 random.seed(SEED)
@@ -1257,10 +1258,14 @@ def main():
     print("[Stage 9] Generating compliance scoring engine...")
     compliance_score = generate_compliance_score()
 
+    # Stage 10: Predictive Regulatory Intelligence
+    print("[Stage 10] Generating predictive regulatory intelligence...")
+    predictive_intelligence = generate_predictive_intelligence()
+
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "generator": "autonomous-compliance-agent-swarm",
-        "version": "6.0.0",
+        "version": "7.0.0",
         "project": "Autonomous Regulatory Compliance Agent Swarm",
         "specification": "Technical Specification v1.0 (July 2026)",
         "architecture": {
@@ -1287,6 +1292,7 @@ def main():
             "auditChain": audit_chain,
             "governanceOrchestrator": governance_orchestrator,
             "complianceScore": compliance_score,
+            "predictiveIntelligence": predictive_intelligence,
         },
         "statistics": {
             "totalScenarios": len(traces),
@@ -1323,6 +1329,12 @@ def main():
             # Stage 9: Compliance Scoring
             "complianceScore": compliance_score["overallCompositeScore"],
             "compliancePosture": compliance_score["overallPosture"],
+            # Stage 10: Predictive Intelligence
+            "predictiveSignals": predictive_intelligence["statistics"]["totalSignals"],
+            "highProbabilitySignals": predictive_intelligence["statistics"]["highProbabilitySignals"],
+            "criticalImpacts": predictive_intelligence["statistics"]["criticalImpacts"],
+            "propagatedSignals": predictive_intelligence["statistics"]["propagatedSignals"],
+            "systemTrend": predictive_intelligence["statistics"]["systemTrend"],
         }
     }
 
