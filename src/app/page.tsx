@@ -9,7 +9,7 @@ import {
   BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
   ShieldCheck, Database, Layers, Scale, Gavel, Network, GitBranch,
   Radio, Link2, Workflow, Boxes, Zap, CircleDot, AlertTriangle, Target,
-  Radar, Brain,
+  Radar, Brain, HelpCircle, SplitSquareVertical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -29,6 +29,7 @@ import { ComplianceScorePanel } from '@/components/dashboard/compliance-score-pa
 import PredictiveIntelligencePanel from '@/components/dashboard/predictive-intelligence-panel'
 import { useObservabilityData } from '@/hooks/use-observability-data'
 import type { ObservabilityData } from '@/hooks/observability-types'
+import JurisdictionalIntelligencePanel from '@/components/dashboard/jurisdictional-intelligence-panel'
 
 export default function Home() {
   const {
@@ -103,6 +104,18 @@ export default function Home() {
               <Badge variant="destructive" className="text-xs animate-pulse">
                 <Shield className="h-3 w-3 mr-1" />
                 {data.statistics.firingAlerts} firing
+              </Badge>
+            )}
+            {data.statistics.legallyAmbiguousCount > 0 && (
+              <Badge variant="outline" className="text-xs hidden lg:inline-flex border-cyan-500/40 text-cyan-600">
+                <HelpCircle className="h-3 w-3 mr-1" />
+                {data.statistics.legallyAmbiguousCount} legally ambiguous
+              </Badge>
+            )}
+            {data.statistics.strategicallyNonCompliantCount > 0 && (
+              <Badge variant="outline" className="text-xs hidden lg:inline-flex border-fuchsia-500/40 text-fuchsia-600">
+                <SplitSquareVertical className="h-3 w-3 mr-1" />
+                {data.statistics.strategicallyNonCompliantCount} strategic non-compliant
               </Badge>
             )}
           </div>
@@ -244,6 +257,10 @@ export default function Home() {
               <Brain className="h-3.5 w-3.5" />
               Predictive Intel
             </TabsTrigger>
+            <TabsTrigger value="jurisdictional-intelligence" className="text-xs gap-1.5">
+              <Scale className="h-3.5 w-3.5" />
+              Jurisdictional Intel
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -362,7 +379,7 @@ export default function Home() {
                     <Database className="h-4 w-4" />
                     API Endpoints
                   </h3>
-                  <Badge variant="outline" className="text-[10px]">18 REST routes</Badge>
+                  <Badge variant="outline" className="text-[10px]">19 REST routes</Badge>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -383,6 +400,7 @@ export default function Home() {
                     { method: 'GET', path: '/api/observability/regenerate', desc: 'Middleware health check', color: 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300' },
                     { method: 'POST', path: '/api/observability/regenerate', desc: 'Re-run Python generator', color: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300' },
                     { method: 'GET', path: '/api/observability/predictive-intelligence', desc: 'Predictive regulatory intel (Stage 10)', color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
+                    { method: 'GET', path: '/api/observability/jurisdictional-intelligence', desc: 'Stage 11: Enhanced SM + constraint graph + Pareto + game theory', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
                     { method: 'GET', path: '/api', desc: 'API root health check', color: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300' },
                   ].map((ep) => (
                     <div key={`${ep.method}-${ep.path}`} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
@@ -462,6 +480,10 @@ export default function Home() {
 
           <TabsContent value="predictive-intelligence">
             <PredictiveIntelligencePanel data={data.data.predictiveIntelligence} />
+          </TabsContent>
+
+          <TabsContent value="jurisdictional-intelligence">
+            <JurisdictionalIntelligencePanel data={data.data.jurisdictionalIntelligence} />
           </TabsContent>
         </Tabs>
       </main>

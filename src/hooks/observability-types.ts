@@ -59,5 +59,6 @@ export interface ObservabilityData {
     governanceOrchestrator: any;
     complianceScore: any;
     predictiveIntelligence: any;
+    jurisdictionalIntelligence: any;
   };
 }

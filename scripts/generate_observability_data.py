@@ -33,6 +33,8 @@ if SCRIPTS_DIR not in sys.path:
 from governance_orchestrator_stage import generate_governance_orchestrator
 from compliance_score_stage import generate_compliance_score
 from predictive_intelligence_stage import generate_predictive_intelligence
+from jurisdictional_intelligence_stage import generate_jurisdictional_intelligence
+from jurisdictional_intelligence_stage import generate_jurisdictional_intelligence
 
 SEED = 42
 random.seed(SEED)
@@ -1262,10 +1264,21 @@ def main():
     print("[Stage 10] Generating predictive regulatory intelligence...")
     predictive_intelligence = generate_predictive_intelligence()
 
+    # Stage 11: Jurisdictional Intelligence Engine
+    print("[Stage 11] Generating jurisdictional intelligence (enhanced SM, constraint graph, Pareto, game theory)...")
+    jurisdictional_intelligence = generate_jurisdictional_intelligence()
+    ji_stats = jurisdictional_intelligence["statistics"]
+    print(f"       Enhanced SM: {ji_stats['totalEnhancedStates']} states, {ji_stats['totalEnhancedEntities']} entities")
+    print(f"       New states: {ji_stats['legallyAmbiguousCount']} legally ambiguous, {ji_stats['strategicallyNonCompliantCount']} strategically non-compliant")
+    print(f"       Fake data silos: {ji_stats['fakeDataSilos']} active")
+    print(f"       Constraint graph: {ji_stats['totalJurisdictions']} jurisdictions, {ji_stats['totalConstraints']} constraints")
+    print(f"       Pareto strategies: {ji_stats['totalStrategies']} strategies, {ji_stats['paretoFrontCount']} on Pareto front")
+    print(f"       Game theory: {ji_stats['totalRegulators']} regulators, {ji_stats['gameRounds']} rounds, ${ji_stats['cumulativePenaltyUsd']:,.0f} cumulative penalty")
+
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "generator": "autonomous-compliance-agent-swarm",
-        "version": "7.0.0",
+        "version": "8.0.0",
         "project": "Autonomous Regulatory Compliance Agent Swarm",
         "specification": "Technical Specification v1.0 (July 2026)",
         "architecture": {
@@ -1293,6 +1306,7 @@ def main():
             "governanceOrchestrator": governance_orchestrator,
             "complianceScore": compliance_score,
             "predictiveIntelligence": predictive_intelligence,
+            "jurisdictionalIntelligence": jurisdictional_intelligence,
         },
         "statistics": {
             "totalScenarios": len(traces),
@@ -1335,6 +1349,15 @@ def main():
             "criticalImpacts": predictive_intelligence["statistics"]["criticalImpacts"],
             "propagatedSignals": predictive_intelligence["statistics"]["propagatedSignals"],
             "systemTrend": predictive_intelligence["statistics"]["systemTrend"],
+            # Stage 11: Jurisdictional Intelligence
+            "enhancedStates": ji_stats["totalEnhancedStates"],
+            "legallyAmbiguousCount": ji_stats["legallyAmbiguousCount"],
+            "strategicallyNonCompliantCount": ji_stats["strategicallyNonCompliantCount"],
+            "fakeDataSilos": ji_stats["fakeDataSilos"],
+            "jurisdictionalConstraints": ji_stats["totalConstraints"],
+            "paretoFrontCount": ji_stats["paretoFrontCount"],
+            "gameTheoryRegulators": ji_stats["totalRegulators"],
+            "cumulativePenaltyUsd": ji_stats["cumulativePenaltyUsd"],
         }
     }
 

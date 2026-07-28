@@ -377,3 +377,62 @@ Stage Summary:
 - Total dashboard tabs: 15
 - Remote: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator
 - Local HEAD == origin/main == 2f0121c
+
+---
+Task ID: 11
+Agent: Main Agent
+Task: Stage 11 — Jurisdictional Intelligence Engine (Enhanced SM, Constraint Graph, Pareto Strategies, Game Theory)
+
+User request: Add 2 new states to state machine ("Legally Ambiguous" + "Strategically Non-Compliant" with fake data silos), build Jurisdictional Constraint Graph, implement Pareto-optimal compliance strategies, add regulatory game theory modeling. Push to GitHub, provide frontend endpoint.
+
+Work Log:
+- Created Python module: scripts/jurisdictional_intelligence_stage.py (~980 lines)
+  - Enhanced 8-state machine: adds legally_ambiguous + strategically_non_compliant states with documented rationales
+  - 4 fake data silos: EU-US Data Transfer Ambiguity, AI Act High-Risk Classification Dispute, AML Throttling, Cookie Consent Dark Pattern
+  - Each silo contains entities with dynamic transitions, business rationale, acceptance documentation, estimated penalties, regulatory response predictions
+  - Jurisdictional Constraint Graph: 10 jurisdiction nodes, 11 constraint edges with severity/mutual-exclusivity classification
+  - BFS path chain enumeration through constraint graph (closures + hypothetical scenarios)
+  - 3 hypothetical scenarios: Fintech Cross-Border, Healthcare AI Diagnostic, Ad-Tech Data Broker
+  - Pareto-optimal compliance strategies: 5 strategies (3 on Pareto front), quantified risk per jurisdiction, cost ranges, decision matrix
+  - Regulatory game theory: 5 regulator profiles (GDPR/EDPB, FinCEN, EU AI Office, SEC, CPPA) with cooperative vs adversarial modeling
+  - Nash equilibrium analysis with deviation rationality checks
+  - Regulator interaction network (precedent spillover, institutional alignment, conflict amplification)
+  - 10-round game simulation with posture evolution tracking
+  - Enforcement probability heatmap (posture × regulator)
+- Wired Stage 11 into generate_observability_data.py main() after Stage 10
+- Bumped generator version 7.0.0 → 8.0.0
+- Regenerated observability-data.json (639KB)
+- Copied to public/ for Next.js consumption
+- Created API route: src/app/api/observability/jurisdictional-intelligence/route.ts (19th route, dynamic)
+- Created dashboard component: src/components/dashboard/jurisdictional-intelligence-panel.tsx (~550 lines, 4 sub-sections)
+  - Enhanced State Machine: 4 KPI cards, 8-state distribution with NEW badges, fake data silo cards with dynamic execution status
+  - Constraint Graph: severity breakdown, constraint edges with mutual exclusivity flags, hypothetical scenarios with risk-per-jurisdiction, path chains
+  - Pareto Strategies: 5 strategy cards with compliance profiles, cost/risk metrics, risk breakdown bars, trade-off lists, Pareto front badges
+  - Game Theory: regulator profiles (cooperative/adversarial signals, response matrix), Nash equilibrium with deviation analysis, interaction network, 10-round simulation, enforcement heatmap
+- Updated page.tsx:
+  - Imported JurisdictionalIntelligencePanel, added HelpCircle + SplitSquareVertical icons
+  - Added header badges for legally ambiguous + strategic non-compliant counts
+  - Added 16th TabsTrigger "Jurisdictional Intel" with Scale icon
+  - Added TabsContent rendering JurisdictionalIntelligencePanel
+  - Updated API endpoints list to 19 routes
+  - Added jurisdictional-intelligence API endpoint entry
+- Updated observability-types.ts: added jurisdictionalIntelligence field
+- Build verified: npm run build → compiled successfully in 11.7s, all 19 routes registered
+- Committed: b420a51
+- Pushed to GitHub: 2f0121c..b420a51 main → main
+
+Stage Summary:
+- Generator: v8.0.0 — 11 stages
+- New files:
+  - scripts/jurisdictional_intelligence_stage.py (980-line Python module)
+  - src/app/api/observability/jurisdictional-intelligence/route.ts (19th API route)
+  - src/components/dashboard/jurisdictional-intelligence-panel.tsx (16th dashboard tab)
+- Total API routes: 19 (18 original + 1 Stage 11)
+- Total dashboard tabs: 16 (15 original + 1 Stage 11)
+- 8-state machine: 2 new states (legally_ambiguous, strategically_non_compliant)
+- 4 fake data silos with dynamic entity execution
+- 10 jurisdiction nodes, 11 constraint edges, 3 hypothetical scenarios
+- 5 compliance strategies (3 Pareto-optimal), quantified risk per jurisdiction
+- 5 regulator profiles with game theory modeling, Nash equilibrium analysis
+- Remote: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator
+- Local HEAD == origin/main == b420a51
