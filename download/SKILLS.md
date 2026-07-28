@@ -229,6 +229,7 @@ Each orchestration run produces a structured payload with the following top-leve
 - **Dashboard component:** `src/components/dashboard/governance-orchestrator-panel.tsx` (~620 lines, 10 sub-panels)
 - **API endpoint:** `GET /api/observability/governance-orchestrator`
 - **Dashboard tab:** "Governance Orchestrator" (13th tab, Boxes icon)
+- **Static mirror (public):** [`https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/governance.html`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/governance.html) — always-on GitHub Pages deployment
 
 ---
 

@@ -4,13 +4,31 @@
 [![Generator Stages](https://img.shields.io/badge/generator-7%20stages-blue.svg)]()
 [![API Routes](https://img.shields.io/badge/API%20routes-16-purple.svg)]()
 [![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-13-orange.svg)]()
-[![Live](https://img.shields.io/badge/live-dynamic%20middleware-success.svg)]()
+[![Live](https://img.shields.io/badge/live-GitHub%20Pages-success.svg)](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/)
 
 Full-stack observability infrastructure for the **Autonomous Regulatory Compliance Agent Swarm** as specified in the Technical Specification (PDF) and `SKILLS.md` capability matrix. Implements a push-based 4-agent cascade (Ingestion → Legal Analyst → Prosecutor → Defender) with full imperative traceability per PDF §9.2, plus a 22-component HIPAA Governance Orchestrator (Stage 7) mirroring the prototype in `download/reference/hipaa_governance_orchestrator.py`.
 
 ## Live Preview & Frontend Endpoints
 
-The application runs as a Next.js 16 web app with a 3-tier architecture: **React frontend → Next.js API middleware (with per-request jitter) → Python data generator (re-runnable on demand)**. The dashboard is **dynamic, not a static scenario** — every poll returns a freshly-stamped `servedAt` timestamp and ±5% jittered KPIs so charts visibly tick between refreshes.
+### Public dashboard (always-on, GitHub Pages)
+
+👉 **https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/**
+
+A static HTML mirror of the dashboard, deployed via GitHub Pages from the companion repo [`Autonomous_Regulatory_Compliance_Agent_Swarm`](https://github.com/testdemoqwenai2025-creator/Autonomous_Regulatory_Compliance_Agent_Swarm). No build step, no server — open the URL and the dashboard loads immediately. Each page has its dataset embedded inline as a `var ORCHESTRATION_DATA = {...}` block, so every page is self-contained and works on any static host (GitHub Pages, Netlify, S3, etc.).
+
+| Page | URL | Content |
+|------|-----|---------|
+| **Landing** | [`/`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/) | Architecture overview, 4 layer cards, agent topology diagram |
+| **Agent Swarm Core** | [`/swarm.html`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/swarm.html) | 4-agent event-driven orchestration: Ingestion, Legal Analysis, Prosecution, Defense. Distributed tracing, event bus metrics, inter-agent messaging, live simulation. |
+| **HIPAA Governance** | [`/governance.html`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/governance.html) | 22-component HIPAA governance layer: IAM, encryption, masking, tokenization, consent, retention, anomaly detection, prompt firewall, audit trail, synthetic patients, provenance chain, DR snapshots. |
+| **State Machine** | [`/statemachine.html`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/statemachine.html) | Compliance state lifecycle engine: 6 states, 6 tracked entities, 11 transitions, 6 cross-regulation conflicts detected and resolved with strategy mapping. |
+| **Capabilities** | [`/capabilities.html`](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/capabilities.html) | 20 individual skills across 4 agents mapped to SKILLS.md proficiency levels L1–L3. Source polling, NLP classification, gap analysis, policy generation, and more. |
+
+**Static site quick-stats:** 5 HTML pages · ~52 KB governance page · vanilla HTML/CSS/JS (no framework, no build step) · data embedded inline · CORS-enabled (`access-control-allow-origin: *`) · served by GitHub.com with `max-age=600` cache.
+
+### Dynamic source (Next.js, this repo)
+
+The dynamic Next.js 16 app in this repo (`src/`) is the **source of truth** — it adds a live middle-tier on top of the same data: per-request jitter, servedAt stamping, an auto-refresh polling UI, and a `POST /api/observability/regenerate` endpoint that re-executes the Python generator on demand. Run it locally with `bun run dev` and open `http://localhost:3000`.
 
 | Endpoint | Type | Description |
 |----------|------|-------------|
@@ -20,7 +38,21 @@ The application runs as a Next.js 16 web app with a 3-tier architecture: **React
 | `/api/observability/regenerate` (GET) | REST API | Middleware health check — returns dataset mtime, version, size |
 | `/api/observability/regenerate` (POST) | REST API | **Re-runs the Python generator** and serves a fresh dataset (~150ms) |
 
-### Try it live
+### Relationship between the two
+
+| Aspect | GitHub Pages (static) | Next.js app (this repo) |
+|--------|----------------------|-------------------------|
+| Hosting | GitHub Pages, always-on | Local dev / FC container |
+| Framework | Vanilla HTML/CSS/JS | Next.js 16 + React 19 + Tailwind 4 |
+| Data freshness | Frozen snapshot (baked in at deploy time) | Dynamic — jitter + regenerate |
+| API endpoints | None (data inline) | 16 REST endpoints |
+| Tabs / pages | 5 pages | 13 tabs |
+| Build step | None | `bun run build` |
+| Best for | Public demo, portfolio, sharing | Local development, dynamic middleware testing |
+
+The Python generator (`scripts/generate_observability_data.py`) is the single source of truth for both — it produces the JSON dataset that the Next.js app serves dynamically and that the static site bakes in at deploy time.
+
+### Try the dynamic middleware locally
 
 Once the dev server is running (`bun run dev`), open the dashboard and try the **Regenerate Now** button on the Overview tab — it triggers `POST /api/observability/regenerate`, which executes `scripts/generate_observability_data.py` end-to-end (all 7 stages) and swaps the dataset under the running server. The `generatedAt` timestamp in the footer will jump, confirming the middleware is wired through.
 
@@ -46,7 +78,7 @@ This is a **compliance observability dashboard** for an autonomous multi-agent s
 
 A **22-component HIPAA Governance Orchestrator** (Stage 7) wraps the swarm with healthcare-specific controls — IAM, KMS, masking, consent, OPA policy-as-code, prompt firewall, output validator, provenance, DR snapshots, and 13 more — each emitting structured events into a SHA-256 hash-linked audit trail.
 
-The dashboard surfaces all of this through 13 tabs and 16 API endpoints, with a live middle-tier that ensures the UI is **not** replaying a frozen JSON snapshot.
+The dashboard surfaces all of this through 13 tabs (Next.js) and 5 pages (static mirror), backed by 16 API endpoints and a live middle-tier that ensures the dynamic UI is **not** replaying a frozen JSON snapshot.
 
 ## Architecture (per PDF §2)
 
