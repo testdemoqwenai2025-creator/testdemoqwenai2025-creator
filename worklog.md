@@ -310,3 +310,30 @@ Stage Summary:
 - Python generator remains the single source of truth for both deployments
 - Space-Z preview URL issue documented as a platform-side ALB routing gap (not an application issue)
 - Local HEAD == origin/main == 6456d24
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Provide a frontend endpoint for the dynamic Next.js dashboard
+
+Work Log:
+- Verified dev server health: localhost:3000 (Next.js) and localhost:81 (Caddy) both return 200 OK
+- Verified all 16 API endpoints return 200 (topology, traces, metrics, imperatives, violations, logs, alerts, state-machine, orchestration, conflicts, audit-chain, governance-orchestrator, regenerate, etc.)
+- Verified live middleware: two consecutive /api/observability fetches return different KPI values (82.75 → 83.16), X-Served-At header is fresh on every call
+- Probed 12+ candidate bot-ids against https://preview-<bot-id>.space-z.ai/ — all return 404 (preview- prefix) or 410 Recycled (bare host)
+  - Candidates tried: FC_FUNCTION_NAME (ws-7c3524f9-...), FC_CONTAINER_ID (c-6a68c93e-...), session_id (web-7ae52b35-...), chat_id (0f08f775-...), trace_id (19fa9d27d71ef615), with/without preview- prefix, with/without fn- prefix, etc.
+- Read Caddyfile (/home/z/my-project/Caddyfile): :81 binds all interfaces, proxies to localhost:3000; no host-based routing
+- FC_FUNCTION_NAME env var contains ws-7c3524f9-1c4c-4f16-a5ee-207dd84a1705 but the bare host returns 410 Recycled → env var is stale
+- Updated README.md with new "Frontend Endpoint (Dynamic Dashboard)" section documenting the preview-<bot-id>.space-z.ai URL format, four endpoint surfaces, and curl examples
+- Bumped version badge 5.1.0 → 5.2.0
+- Discovered GitHub Push Protection was blocking pushes because worklog.md (commit 34efe6e) contained a literal PAT
+- Wrote scripts/redact_pat.py to scan & redact ghp_*/github_pat_* patterns; ran it on worklog.md (1 occurrence redacted)
+- Soft-reset to remote main (6456d24), recommitted as 3da3503 with PAT stripped, pushed successfully
+- Remote main now at 3da3503
+
+Stage Summary:
+- README.md on GitHub now documents the public frontend endpoint format
+- Local container is fully healthy (200 OK on all 16 endpoints + frontend, jitter live, servedAt stamp present)
+- The public preview URL https://preview-ws-7c3524f9-1c4c-4f16-a5ee-207dd84a1705.space-z.ai/ returns 404 from inside the container because the FC_FUNCTION_NAME bot-id is stale
+- User should open the preview via the chat UI's preview button (which uses the live bot-id provisioned by the Space-Z platform) or share the live URL
+- PAT was redacted from worklog.md; user should also revoke the leaked PAT on GitHub as a precaution
