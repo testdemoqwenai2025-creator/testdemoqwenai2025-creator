@@ -1,9 +1,9 @@
 # Autonomous Regulatory Compliance Agent Swarm — Observability
 
-[![Version](https://img.shields.io/badge/version-5.3.0-emerald.svg)]()
-[![Generator Stages](https://img.shields.io/badge/generator-7%20stages-blue.svg)]()
-[![API Routes](https://img.shields.io/badge/API%20routes-16-purple.svg)]()
-[![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-13-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.0-emerald.svg)]()
+[![Generator Stages](https://img.shields.io/badge/generator-8%20stages-blue.svg)]()
+[![API Routes](https://img.shields.io/badge/API%20routes-17-purple.svg)]()
+[![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-14-orange.svg)]()
 [![Live](https://img.shields.io/badge/live-GitHub%20Pages-success.svg)](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/)
 
 Full-stack observability infrastructure for the **Autonomous Regulatory Compliance Agent Swarm** as specified in the Technical Specification (PDF) and `SKILLS.md` capability matrix. Implements a push-based 4-agent cascade (Ingestion → Legal Analyst → Prosecutor → Defender) with full imperative traceability per PDF §9.2, plus a 22-component HIPAA Governance Orchestrator (Stage 7) mirroring the prototype in `download/reference/hipaa_governance_orchestrator.py`.
@@ -209,7 +209,7 @@ download/
     └── state_machine_conflict_engine.py  → State machine + conflict engine prototype
 ```
 
-## Generator Pipeline (7 stages, v5.0.0)
+## Generator Pipeline (8 stages, v6.0.0)
 
 | Stage | Module | Output | Spec Reference |
 |-------|--------|--------|-----------------|
@@ -220,12 +220,13 @@ download/
 | 5 | `generate_agent_topology()` + `generate_imperative_registry()` + `generate_violations()` | 4 agents, 38 imperatives, 10 violations | PDF §3-§6, SKILLS §1-§4 |
 | 6 | `generate_state_machine()` + `generate_event_bus()` + `generate_conflicts()` + `generate_audit_chain()` | 8 entities, 40 transitions, 8 topics, 15 conflicts, 30 audit entries | SKILLS §5 |
 | 7 | `generate_governance_orchestrator()` | 22 components, 37 events, 36 audit entries, escalations, breach alerts, provenance chain, synthetic patients, DR snapshots, OCR/ONC compliance report | HIPAA Governance Orchestrator prototype |
+| 8 | `generate_compliance_score()` | 7-framework composite scores (6 dimensions each), 30-day trend, 10-item risk matrix, imperative coverage, posture assessment | Compliance Scoring |
 
-## Dashboard Tabs (13 total)
+## Dashboard Tabs (14 total)
 
 | # | Tab | Content | Stage |
 |---|-----|---------|-------|
-| 1 | **Overview** | Architecture hero, KPIs, dynamic-layer card, 16 API endpoints | 1 |
+| 1 | **Overview** | Architecture hero, KPIs, dynamic-layer card, 17 API endpoints | 1 |
 | 2 | **Agent Topology** | 4-agent cascade diagram + per-agent skills/throughput | 1 |
 | 3 | **Metrics** | 9 swarm-specific metrics color-coded by owning agent | 1 |
 | 4 | **Pipeline Traces** | 20 push-update scenarios with span waterfall | 1 |
@@ -238,8 +239,9 @@ download/
 | 11 | **Conflicts** | 15 regulatory conflicts with severity + resolution strategy | 6 |
 | 12 | **Audit Chain** | 30-entry hash-linked append-only audit chain with signatures | 6 |
 | 13 | **Governance Orchestrator** | 22-component HIPAA governance with audit trail, escalations, breach alerts, provenance, DR snapshots, synthetic patients, OCR/ONC report | 7 |
+| 14 | **Compliance Score** | 7-framework weighted composite score, dimension breakdown, 30-day trend chart, cross-framework risk matrix, imperative coverage, posture assessment | 9 |
 
-## API Endpoints (16 total)
+## API Endpoints (17 total)
 
 | # | Method | Endpoint | Returns | Stage | Dynamic? |
 |---|--------|----------|---------|-------|----------|
@@ -256,9 +258,10 @@ download/
 | 11 | GET | `/api/observability/conflicts` | Regulatory conflict resolution | 6 | static |
 | 12 | GET | `/api/observability/audit-chain` | Immutable append-only audit chain | 6 | static |
 | 13 | GET | `/api/observability/governance-orchestrator` | 22-component HIPAA governance orchestrator | 7 | static |
-| 14 | GET | `/api/observability/regenerate` | Middleware health check (mtime, version, size) | 8 | ✅ always fresh |
-| 15 | POST | `/api/observability/regenerate` | Re-runs Python generator end-to-end, serves new dataset | 8 | ✅ triggers middleware |
-| 16 | GET | `/api` | API root (health check) | 1 | static |
+| 14 | GET | `/api/observability/compliance-score` | 7-framework composite scores + 30-day trend + risk matrix | 9 | ✅ jittered composite + per-framework scores per call |
+| 15 | GET | `/api/observability/regenerate` | Middleware health check (mtime, version, size) | 8 | ✅ always fresh |
+| 16 | POST | `/api/observability/regenerate` | Re-runs Python generator end-to-end, serves new dataset | 8 | ✅ triggers middleware |
+| 17 | GET | `/api` | API root (health check) | 1 | static |
 
 ### Frontend Endpoints
 
@@ -378,7 +381,8 @@ Each stage of application development follows this workflow:
 | 1-5 | `ac54893` | Initial observability: traces, metrics, logs, alerts, topology, imperatives, violations |
 | 6 | `f0ecae1` | Orchestration layer: state machine, event bus, conflicts, audit chain |
 | 7 | `a013ab9` | HIPAA Governance Orchestrator: 22 components, audit trail, escalations, DR |
-| 8 | (this commit) | Dynamic live middleware: regenerate endpoint, per-request jitter, auto-refresh polling |
+| 8 | `bab4c2c` | Dynamic live middleware: regenerate endpoint, per-request jitter, auto-refresh polling |
+| 9 | (this commit) | Compliance scoring engine: 7-framework weighted composite, 30-day trend, cross-framework risk matrix |
 
 ## Implementation Guardrails (PDF §9)
 

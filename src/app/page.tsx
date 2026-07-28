@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
   ShieldCheck, Database, Layers, Scale, Gavel, Network, GitBranch,
-  Radio, Link2, Workflow, Boxes, Zap, CircleDot, AlertTriangle,
+  Radio, Link2, Workflow, Boxes, Zap, CircleDot, AlertTriangle, Target,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -24,6 +24,7 @@ import { ConflictsPanel } from '@/components/dashboard/conflicts-panel'
 import { OrchestrationPanel } from '@/components/dashboard/orchestration-panel'
 import { ProvenancePanel } from '@/components/dashboard/provenance-panel'
 import { GovernanceOrchestratorPanel } from '@/components/dashboard/governance-orchestrator-panel'
+import { ComplianceScorePanel } from '@/components/dashboard/compliance-score-panel'
 import { useObservabilityData } from '@/hooks/use-observability-data'
 import type { ObservabilityData } from '@/hooks/observability-types'
 
@@ -231,7 +232,11 @@ export default function Home() {
             </TabsTrigger>
             <TabsTrigger value="governance" className="text-xs gap-1.5">
               <Boxes className="h-3.5 w-3.5" />
-              Governance Orchestrator
+              Governance
+            </TabsTrigger>
+            <TabsTrigger value="compliance-score" className="text-xs gap-1.5">
+              <Target className="h-3.5 w-3.5" />
+              Compliance Score
             </TabsTrigger>
           </TabsList>
 
@@ -351,7 +356,7 @@ export default function Home() {
                     <Database className="h-4 w-4" />
                     API Endpoints
                   </h3>
-                  <Badge variant="outline" className="text-[10px]">16 REST routes</Badge>
+                  <Badge variant="outline" className="text-[10px]">17 REST routes</Badge>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -368,6 +373,7 @@ export default function Home() {
                     { method: 'GET', path: '/api/observability/conflicts', desc: 'Conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
                     { method: 'GET', path: '/api/observability/audit-chain', desc: 'Hash-linked audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
                     { method: 'GET', path: '/api/observability/governance-orchestrator', desc: '22-component HIPAA governance', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/compliance-score', desc: 'Framework scoring engine (Stage 9)', color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
                     { method: 'GET', path: '/api/observability/regenerate', desc: 'Middleware health check', color: 'bg-slate-100 text-slate-700 dark:bg-slate-950 dark:text-slate-300' },
                     { method: 'POST', path: '/api/observability/regenerate', desc: 'Re-run Python generator', color: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300' },
                     { method: 'GET', path: '/api', desc: 'API root health check', color: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300' },
@@ -441,6 +447,10 @@ export default function Home() {
 
           <TabsContent value="governance">
             <GovernanceOrchestratorPanel data={data.data.governanceOrchestrator} />
+          </TabsContent>
+
+          <TabsContent value="compliance-score">
+            <ComplianceScorePanel data={data.data.complianceScore} />
           </TabsContent>
         </Tabs>
       </main>

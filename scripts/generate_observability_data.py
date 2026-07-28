@@ -31,6 +31,7 @@ if SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, SCRIPTS_DIR)
 
 from governance_orchestrator_stage import generate_governance_orchestrator
+from compliance_score_stage import generate_compliance_score
 
 SEED = 42
 random.seed(SEED)
@@ -1252,10 +1253,14 @@ def main():
     print(f"       Breach alerts: {gov_stats['breachAlerts']} | Provenance steps: {gov_stats['provenanceSteps']}")
     print(f"       Synthetic patients: {gov_stats['syntheticPatientsGenerated']} | DR snapshots: {gov_stats['drSnapshots']}")
 
+    # Stage 9: Compliance Scoring Engine
+    print("[Stage 9] Generating compliance scoring engine...")
+    compliance_score = generate_compliance_score()
+
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "generator": "autonomous-compliance-agent-swarm",
-        "version": "5.0.0",
+        "version": "6.0.0",
         "project": "Autonomous Regulatory Compliance Agent Swarm",
         "specification": "Technical Specification v1.0 (July 2026)",
         "architecture": {
@@ -1281,6 +1286,7 @@ def main():
             "conflicts": conflicts,
             "auditChain": audit_chain,
             "governanceOrchestrator": governance_orchestrator,
+            "complianceScore": compliance_score,
         },
         "statistics": {
             "totalScenarios": len(traces),
@@ -1314,6 +1320,9 @@ def main():
             "governanceSyntheticPatients": gov_stats["syntheticPatientsGenerated"],
             "governanceDrSnapshots": gov_stats["drSnapshots"],
             "governanceRiskPosture": gov_stats["complianceRiskPosture"],
+            # Stage 9: Compliance Scoring
+            "complianceScore": compliance_score["overallCompositeScore"],
+            "compliancePosture": compliance_score["overallPosture"],
         }
     }
 

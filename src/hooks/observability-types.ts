@@ -57,5 +57,6 @@ export interface ObservabilityData {
     conflicts: any;
     auditChain: any;
     governanceOrchestrator: any;
+    complianceScore: any;
   };
 }
