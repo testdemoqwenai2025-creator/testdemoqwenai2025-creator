@@ -61,6 +61,7 @@ server.log
 .zscripts/
 
 # Worklog
-worklog.mdtool-results/
+worklog.md
+tool-results/
 release/
 .next/
