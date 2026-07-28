@@ -1,6 +1,6 @@
 # Autonomous Regulatory Compliance Agent Swarm — Observability
 
-[![Version](https://img.shields.io/badge/version-5.2.0-emerald.svg)]()
+[![Version](https://img.shields.io/badge/version-5.3.0-emerald.svg)]()
 [![Generator Stages](https://img.shields.io/badge/generator-7%20stages-blue.svg)]()
 [![API Routes](https://img.shields.io/badge/API%20routes-16-purple.svg)]()
 [![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-13-orange.svg)]()
@@ -10,37 +10,31 @@ Full-stack observability infrastructure for the **Autonomous Regulatory Complian
 
 ## Frontend Endpoint (Dynamic Dashboard)
 
-The dynamic Next.js dashboard is served from this container via Caddy → Next.js. The public endpoint is provisioned by the Space-Z preview gateway and has the canonical form:
+👉 **https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/**
 
-```
-https://preview-<bot-id>.space-z.ai/
-```
-
-where `<bot-id>` is the runtime identifier assigned by the Space-Z platform to this container (visible inside the container as `FC_FUNCTION_NAME`). The gateway routes `preview-<bot-id>.space-z.ai` → container port 81 (Caddy) → `localhost:3000` (Next.js dev server).
+The dynamic Next.js 16 dashboard is served from this container via **Caddy (port 81) → Next.js (port 3000)**. The Space-Z preview gateway routes the public URL above through to the container, making all 16 API endpoints and the 13-tab UI accessible from any browser.
 
 | Surface | URL | Notes |
 |---------|-----|-------|
-| **Public dashboard** | `https://preview-<bot-id>.space-z.ai/` | Routes through the Space-Z preview gateway → Caddy → Next.js |
+| **Public dashboard** | https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/ | Routes through the Space-Z preview gateway → Caddy → Next.js |
 | **Local dashboard** | `http://localhost:3000/` | Direct Next.js dev server (run `bun run dev`) |
 | **Local via Caddy** | `http://localhost:81/` | Same path the gateway takes internally |
 | **Static mirror** | https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/ | Always-on GitHub Pages snapshot (no middleware) |
 
-All 16 API routes are reachable on the same host. For example, on the public endpoint:
+All 16 API routes are reachable on the same public host. Example curl commands:
 
 ```bash
-# Verify the live middleware from the public URL
-curl -sI https://preview-<bot-id>.space-z.ai/api/observability | grep -i "x-served-at"
-# → X-Served-At: 2026-07-28T17:46:43.689Z  (fresh timestamp per call)
-
 # Two consecutive fetches return different KPI values (jittered)
-curl -s https://preview-<bot-id>.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
-curl -s https://preview-<bot-id>.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+curl -s https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+curl -s https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
 
 # Trigger the Python middleware regenerator
-curl -s -X POST https://preview-<bot-id>.space-z.ai/api/observability/regenerate | jq '{runId, generatedAt, version}'
-```
+curl -s -X POST https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/api/observability/regenerate | jq '{runId, generatedAt, version}'
 
-> The bot-id is allocated by the Space-Z platform at container start. Inside the container it is exposed via `FC_FUNCTION_NAME`. If the gateway returns 404 for the URL above, the platform has not yet registered the routing rule for this container — try refreshing the preview in the chat UI to re-establish the route.
+# Check specific API slices
+curl -s https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/api/observability/metrics | jq '.data.metrics.series[0].name'
+curl -s https://preview-chat-0f08f775-cc2e-462b-a193-602475266e1c.space-z.ai/api/observability/alerts | jq '.data.triggered_alerts | length'
+```
 
 ---
 
