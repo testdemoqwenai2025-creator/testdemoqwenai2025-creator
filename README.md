@@ -1,6 +1,6 @@
-# Observability Dashboard
+# Autonomous Compliance — Observability Infrastructure
 
-Full-stack observability infrastructure with distributed tracing, system metrics, structured logging, and intelligent alerting — visualized in a real-time Next.js dashboard.
+Full-stack observability infrastructure for the **Autonomous Compliance** platform with distributed tracing, compliance metrics, structured audit logs, and intelligent alerting — visualized in a real-time Next.js dashboard.
 
 ## Architecture
 
@@ -10,40 +10,60 @@ public/observability-data.json            → Generated Dataset
 src/app/api/observability/route.ts        → API Endpoint
 src/app/page.tsx                          → Dashboard Entry
 src/components/dashboard/                 → Dashboard Components
-  ├── stats-cards.tsx                     → KPI Overview Cards
+  ├── stats-cards.tsx                     → Compliance KPI Overview Cards
   ├── metrics-charts.tsx                  → Time-Series Charts (Recharts)
-  ├── traces-panel.tsx                     → Distributed Trace Viewer
-  ├── logs-panel.tsx                       → Structured Log Browser
-  └── alerts-panel.tsx                     → Alert Rules & Fired Alerts
+  ├── traces-panel.tsx                     → Compliance Workflow Trace Viewer
+  ├── logs-panel.tsx                       → Audit Log Browser
+  └── alerts-panel.tsx                     → Compliance Alert Rules & Fired Alerts
 ```
+
+## Compliance Services
+
+| Service | Role |
+|---------|------|
+| **compliance-gateway** | API entry point for all compliance operations |
+| **policy-engine** | Evaluates, compiles, and resolves compliance policies |
+| **audit-logger** | Immutable audit trail recording and integrity validation |
+| **risk-assessor** | Calculates risk scores, threat modeling, residual risk |
+| **compliance-checker** | Automated checks against SOC2, GDPR, HIPAA, ISO27001, PCI-DSS |
+| **data-governor** | Data classification, retention enforcement, access control |
+| **identity-verifier** | Authentication, authorization, access reviews, MFA |
+| **evidence-collector** | Evidence collection, chain validation, attestation |
+| **control-mapper** | Maps controls to NIST, CIS benchmarks, control matrix |
+| **reporting-service** | Generates compliance reports, executive summaries, heatmaps |
 
 ## Features
 
 ### Tracing
-- **50 distributed traces** with 226 spans across 10 microservices
+- **50 distributed traces** with 218 spans across 10 compliance services
 - Span hierarchy visualization (parent → child waterfall)
-- Service & operation breakdown with latency color coding
+- Framework tagging (SOC2, GDPR, HIPAA, ISO27001, PCI-DSS, NIST-CSF, CIS)
+- Check type badges (e.g., `SOC2.A1`, `GDPR.Art.6`)
 - Filter by status (OK / Error)
 
 ### Metrics
-- **8 time-series metric families** with 60 data points each
-- System: CPU usage, memory utilization, active connections
-- Application: request rate, error rate, P50/P99 latency, queue depth
-- Interactive charts with tooltips and gradient fills
-- Summary cards with current, peak, and average values
+- **6 compliance-specific time-series**: compliance score, violation rate, policy eval throughput, risk score, audit coverage, evidence collection
+- **2 system metrics**: CPU, memory
+- All with 60 data points, interactive tooltips, and threshold lines
+- Summary cards with current, peak, and minimum values
 
 ### Logging
-- **200 structured log entries** across 5 severity levels
-- Service-level filtering (10 services)
+- **200 structured audit log entries** across 5 severity levels
+- Compliance-specific messages (policy evaluations, control checks, risk assessments, data classification)
+- Service-level filtering (10 compliance services)
 - Full-text search across messages
-- Trace ID correlation (trace:span linkage)
-- Alerting flag for WARNING+ entries
+- Trace ID correlation and alerting flags
 
 ### Alerting
-- **8 alert rules** with conditions, severity, and runbook links
+- **10 compliance alert rules** with conditions, severity, and runbook links
 - **25 triggered alerts** (firing / resolved / acknowledged)
-- Severity breakdown: critical, high, medium, low, info
-- Environment/region/team labels with metric thresholds
+- Framework-specific labels (SOC2, GDPR, HIPAA, etc.)
+- Team labels (compliance, security, governance, legal, engineering)
+- Metric threshold tracking with current vs. threshold display
+
+## Compliance Frameworks
+
+SOC2 · GDPR · HIPAA · ISO27001 · PCI-DSS · NIST-CSF · CIS
 
 ## Tech Stack
 
@@ -62,7 +82,7 @@ src/components/dashboard/                 → Dashboard Components
 # Install dependencies
 bun install
 
-# Generate fresh observability data
+# Generate compliance observability data
 python3 scripts/generate_observability_data.py
 
 # Start development server
@@ -73,11 +93,9 @@ bun run dev
 
 ## Data Generation
 
-The Python script (`scripts/generate_observability_data.py`) produces realistic simulated data:
-
 ```bash
 python3 scripts/generate_observability_data.py
-# Output: download/observability-data.json (~200KB)
+# Output: download/observability-data.json (~216KB)
 ```
 
 Configuration: Edit `SEED`, `num_traces`, `num_logs`, `num_points`, and `num_alerts` at the top of the script.
@@ -86,11 +104,11 @@ Configuration: Edit `SEED`, `num_traces`, `num_logs`, `num_points`, and `num_ale
 
 | Tab | Description |
 |-----|-------------|
-| **Overview** | KPI cards + mini metric charts + hero stats |
-| **Metrics** | Full time-series charts (system + application) |
-| **Traces** | Distributed trace table with span waterfall |
-| **Logs** | Filterable structured log viewer |
-| **Alerts** | Alert rules + triggered alert table |
+| **Overview** | Hero stats + compliance KPI cards + framework badges + mini charts |
+| **Metrics** | Full time-series charts (compliance + system) with thresholds |
+| **Traces** | Distributed trace table with compliance workflow span waterfall |
+| **Logs** | Filterable audit log viewer with service/level/search |
+| **Alerts** | Compliance alert rules + triggered alert table with runbook links |
 
 ## License
 

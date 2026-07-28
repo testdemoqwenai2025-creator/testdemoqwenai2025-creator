@@ -1,23 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight, Clock, AlertCircle, CheckCircle2, XCircle, Timer } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, CheckCircle2, XCircle, Timer, ShieldCheck } from 'lucide-react'
 
 interface Span {
   traceId: string
@@ -28,7 +20,7 @@ interface Span {
   startTime: string
   durationMs: number
   status: string
-  tags: Record<string, string | null>
+  tags: Record<string, string | null | undefined>
 }
 
 interface Trace {
@@ -39,6 +31,7 @@ interface Trace {
   durationMs: number
   status: string
   spanCount: number
+  tags?: Record<string, string>
   spans: Span[]
 }
 
@@ -75,7 +68,7 @@ export function TracesPanel({ traces }: TracesPanelProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Distributed Traces
+            Compliance Workflow Traces
           </CardTitle>
           <div className="flex gap-1">
             {(['all', 'ok', 'error'] as const).map((f) => (
@@ -104,6 +97,7 @@ export function TracesPanel({ traces }: TracesPanelProps) {
                 <TableHead>Trace ID</TableHead>
                 <TableHead>Service</TableHead>
                 <TableHead>Operation</TableHead>
+                <TableHead>Framework</TableHead>
                 <TableHead>Time</TableHead>
                 <TableHead className="text-right">Duration</TableHead>
                 <TableHead>Status</TableHead>
@@ -113,6 +107,7 @@ export function TracesPanel({ traces }: TracesPanelProps) {
             <TableBody>
               {filtered.map((trace) => {
                 const isExpanded = expandedTrace === trace.traceId
+                const framework = trace.tags?.['compliance.framework'] || trace.spans?.[0]?.tags?.['compliance.framework']
                 return (
                   <Collapsible
                     key={trace.traceId}
@@ -141,6 +136,13 @@ export function TracesPanel({ traces }: TracesPanelProps) {
                           <TableCell className="text-xs max-w-[200px] truncate">
                             {trace.operation}
                           </TableCell>
+                          <TableCell>
+                            {framework && (
+                              <Badge className="text-[10px] h-5 bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300">
+                                {framework}
+                              </Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                             {formatTime(trace.startTime)}
                           </TableCell>
@@ -157,10 +159,10 @@ export function TracesPanel({ traces }: TracesPanelProps) {
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow>
-                          <TableCell colSpan={8} className="bg-muted/20 p-0">
+                          <TableCell colSpan={9} className="bg-muted/20 p-0">
                             <div className="p-4 pl-12 space-y-1">
                               <div className="text-xs font-medium text-muted-foreground mb-2">
-                                Span Waterfall ({trace.spanCount} spans)
+                                Compliance Workflow Spans ({trace.spanCount} spans)
                               </div>
                               {trace.spans.map((span) => {
                                 const depth = span.parentSpanId ? 1 : 0
@@ -177,7 +179,12 @@ export function TracesPanel({ traces }: TracesPanelProps) {
                                     <Badge variant="outline" className="text-[10px] h-5 shrink-0">
                                       {span.service}
                                     </Badge>
-                                    <span className="text-xs truncate max-w-[180px]">{span.operation}</span>
+                                    <span className="text-xs truncate max-w-[160px]">{span.operation}</span>
+                                    {span.tags?.['compliance.check_type'] && (
+                                      <Badge className="text-[10px] h-5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 shrink-0">
+                                        {span.tags['compliance.check_type']}
+                                      </Badge>
+                                    )}
                                     <div className="flex-1" />
                                     <div
                                       className={`h-2 rounded-full ${span.status === 'error' ? 'bg-red-500/60' : span.status === 'ok' ? 'bg-green-500/60' : 'bg-amber-500/60'}`}
@@ -207,3 +214,5 @@ export function TracesPanel({ traces }: TracesPanelProps) {
     </Card>
   )
 }
+
+import { useState } from 'react'

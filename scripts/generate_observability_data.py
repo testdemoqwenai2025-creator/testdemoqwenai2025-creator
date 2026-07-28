@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Observability Infrastructure Data Generator
-=============================================
-Generates comprehensive simulated observability data including:
-  - Distributed Tracing (spans, services, operations, latencies)
-  - System & Application Metrics (CPU, memory, request rates, error rates)
-  - Structured Logs (multi-level, multi-service, with context)
-  - Alerting (rules definitions, triggered alerts, severity)
+Autonomous Compliance – Observability Infrastructure Data Generator
+====================================================================
+Generates domain-specific simulated observability data for an Autonomous
+Compliance platform covering:
+  - Distributed Tracing  (compliance workflow spans, policy evaluations)
+  - Compliance Metrics   (policy checks, violation rates, risk scores,
+                         audit coverage, framework posture)
+  - Structured Logs      (audit events, policy violations, governance)
+  - Alerting             (compliance drift, regulatory deadlines, breaches)
 
 Output: /home/z/my-project/download/observability-data.json
 """
@@ -26,47 +28,112 @@ random.seed(SEED)
 # ── Helper Utilities ──────────────────────────────────────────────────────────
 
 def ts(minutes_ago=0, seconds_offset=0):
-    """Return ISO 8601 UTC timestamp relative to NOW."""
     dt = NOW - timedelta(minutes=minutes_ago, seconds=seconds_offset)
     return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
 
 def rand_latency(lo=5, hi=500):
-    """Random latency in ms with log-normal-ish distribution."""
     return max(lo, min(hi, int(random.lognormvariate(math.log(50), 1.0))))
 
 def rand_choice(options, weights=None):
-    """Weighted random choice."""
     return random.choices(options, weights=weights or [1]*len(options), k=1)[0]
 
-
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. DISTRIBUTED TRACING
+# 1. DISTRIBUTED TRACING — Compliance Workflows
 # ══════════════════════════════════════════════════════════════════════════════
 
 SERVICES = [
-    "api-gateway", "auth-service", "user-service", "order-service",
-    "payment-service", "inventory-service", "notification-service",
-    "cache-redis", "postgres-db", "message-queue"
+    "compliance-gateway",
+    "policy-engine",
+    "audit-logger",
+    "risk-assessor",
+    "compliance-checker",
+    "data-governor",
+    "identity-verifier",
+    "evidence-collector",
+    "control-mapper",
+    "reporting-service",
 ]
 
 OPERATIONS = {
-    "api-gateway": ["HTTP GET /api/users", "HTTP POST /api/orders", "HTTP GET /api/products",
-                     "HTTP POST /api/auth/login", "HTTP GET /api/health"],
-    "auth-service": ["ValidateToken", "RefreshToken", "Authenticate", "RevokeSession"],
-    "user-service": ["GetUserProfile", "UpdateUser", "ListUsers", "DeleteUser"],
-    "order-service": ["CreateOrder", "GetOrder", "ListOrders", "CancelOrder", "UpdateOrderStatus"],
-    "payment-service": ["ProcessPayment", "RefundPayment", "GetPaymentStatus", "ValidateCard"],
-    "inventory-service": ["CheckStock", "ReserveStock", "ReleaseStock", "GetInventory"],
-    "notification-service": ["SendEmail", "SendSMS", "SendPush", "QueueNotification"],
-    "cache-redis": ["GET", "SET", "DEL", "EXPIRE", "HGETALL"],
-    "postgres-db": ["SELECT", "INSERT", "UPDATE", "BEGIN", "COMMIT", "ROLLBACK"],
-    "message-queue": ["PUBLISH", "CONSUME", "ACK", "NACK", "REQUEUE"]
+    "compliance-gateway": [
+        "HTTP POST /api/v1/compliance/evaluate",
+        "HTTP GET /api/v1/compliance/status",
+        "HTTP POST /api/v1/compliance/report",
+        "HTTP GET /api/v1/policies",
+        "HTTP POST /api/v1/audit/trail",
+    ],
+    "policy-engine": [
+        "EvaluatePolicy",
+        "CompilePolicySet",
+        "ResolvePolicyConflicts",
+        "VersionPolicy",
+        "DeployPolicyUpdate",
+    ],
+    "audit-logger": [
+        "RecordAuditEvent",
+        "QueryAuditTrail",
+        "ExportAuditLog",
+        "ArchiveAuditRecords",
+        "ValidateAuditIntegrity",
+    ],
+    "risk-assessor": [
+        "CalculateRiskScore",
+        "AssessControlEffectiveness",
+        "RunThreatModeling",
+        "EvaluateResidualRisk",
+        "UpdateRiskRegister",
+    ],
+    "compliance-checker": [
+        "RunSOCCheck",
+        "RunGDPRCheck",
+        "RunHIPAACheck",
+        "RunISO27001Check",
+        "RunPCIDSSCheck",
+        "CheckFrameworkDrift",
+        "ValidateControlEvidence",
+    ],
+    "data-governor": [
+        "ClassifyData",
+        "EnforceRetentionPolicy",
+        "CheckAccessAuthorization",
+        "ValidateDataLineage",
+        "ApplyDataMasking",
+    ],
+    "identity-verifier": [
+        "AuthenticateUser",
+        "AuthorizeAccess",
+        "RunAccessReview",
+        "ValidateMFA",
+        "CheckRoleEntitlement",
+    ],
+    "evidence-collector": [
+        "CollectEvidence",
+        "ValidateEvidenceChain",
+        "LinkControlToFramework",
+        "ArchiveEvidenceArtifact",
+        "GenerateAttestation",
+    ],
+    "control-mapper": [
+        "MapControlToFramework",
+        "SyncNISTControls",
+        "UpdateCISBenchmarks",
+        "MapRiskToTreatment",
+        "GenerateControlMatrix",
+    ],
+    "reporting-service": [
+        "GenerateComplianceReport",
+        "ExportExecutiveSummary",
+        "GenerateAuditReport",
+        "ProduceRiskHeatmap",
+        "CreateComplianceDashboard",
+    ],
 }
 
-STATUSES = ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "error", "error", "timeout"]  # 70% ok
+STATUSES = ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "error", "error", "timeout"]
+
+COMPLIANCE_FRAMEWORKS = ["SOC2", "GDPR", "HIPAA", "ISO27001", "PCI-DSS", "NIST-CSF", "CIS"]
 
 def generate_traces(num_traces=50):
-    """Generate distributed trace data with realistic span hierarchies."""
     traces = []
     trace_ids_used = set()
 
@@ -76,13 +143,13 @@ def generate_traces(num_traces=50):
             trace_id = str(uuid.uuid4())
         trace_ids_used.add(trace_id)
 
-        # Pick a root service (typically api-gateway)
-        root_service = "api-gateway"
+        root_service = "compliance-gateway"
         root_operation = rand_choice(OPERATIONS[root_service])
         root_status = rand_choice(STATUSES)
         root_start = ts(minutes_ago=random.randint(0, 60))
         root_latency = rand_latency(20, 800)
         root_span_id = str(uuid.uuid4())[:16]
+        framework = rand_choice(COMPLIANCE_FRAMEWORKS)
 
         spans = [{
             "traceId": trace_id,
@@ -96,10 +163,10 @@ def generate_traces(num_traces=50):
             "tags": {
                 "http.method": root_operation.split()[1] if "HTTP" in root_operation else None,
                 "http.url": root_operation.split()[-1] if "HTTP" in root_operation else None,
+                "compliance.framework": framework,
             }
         }]
 
-        # Generate child spans (2-5 per trace)
         num_children = random.randint(2, 5)
         for j in range(num_children):
             child_service = rand_choice(SERVICES)
@@ -109,14 +176,17 @@ def generate_traces(num_traces=50):
             child_latency = rand_latency(3, 300)
             child_span_id = str(uuid.uuid4())[:16]
 
-            span_tags = {}
+            span_tags = {
+                "compliance.framework": framework,
+            }
             if "HTTP" in child_op:
                 parts = child_op.split()
                 span_tags["http.method"] = parts[1]
                 span_tags["http.url"] = parts[-1]
-            elif child_op in ("SELECT", "INSERT", "UPDATE"):
-                span_tags["db.system"] = "postgresql"
-                span_tags["db.statement"] = child_op.lower()
+            if any(f in child_op for f in ["SOC", "GDPR", "HIPAA", "ISO", "PCI"]):
+                span_tags["compliance.check_type"] = child_op.replace("Run", "").replace("Check", "")
+            if "Risk" in child_op:
+                span_tags["risk.category"] = rand_choice(["operational", "strategic", "compliance", "financial", "cyber"])
 
             spans.append({
                 "traceId": trace_id,
@@ -139,6 +209,7 @@ def generate_traces(num_traces=50):
             "durationMs": root_latency,
             "status": "error" if has_error else root_status,
             "spanCount": len(spans),
+            "tags": { "compliance.framework": framework },
             "spans": spans
         })
 
@@ -146,129 +217,135 @@ def generate_traces(num_traces=50):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. METRICS
+# 2. COMPLIANCE METRICS
 # ══════════════════════════════════════════════════════════════════════════════
 
 def generate_metrics(num_points=60):
-    """Generate time-series metrics for system and application monitoring."""
     cpu_points = []
     memory_points = []
-    request_rate_points = []
-    error_rate_points = []
-    p50_latency_points = []
-    p99_latency_points = []
-    active_connections_points = []
-    queue_depth_points = []
+    compliance_score_points = []
+    violation_rate_points = []
+    policy_eval_rate_points = []
+    risk_score_points = []
+    audit_coverage_points = []
+    evidence_collection_points = []
 
     base_cpu = 45
     base_mem = 62
-    base_req = 1200
-    base_err = 0.8
-    base_p50 = 45
-    base_p99 = 350
-    base_conn = 85
-    base_queue = 12
+    base_comp_score = 87
+    base_violation = 1.2
+    base_policy_eval = 340
+    base_risk = 32
+    base_audit_cov = 91
+    base_evidence = 78
 
     for i in range(num_points):
         t = ts(minutes_ago=(num_points - i))
 
-        # Simulate realistic patterns: gradual increase, spike at ~40%, recovery
-        time_factor = math.sin(i / num_points * 2 * math.pi) * 10
-        spike_factor = 30 if 20 <= i <= 25 else 0  # traffic spike
+        time_factor = math.sin(i / num_points * 2 * math.pi) * 8
+        spike_factor = 25 if 18 <= i <= 23 else 0  # compliance scan burst
+        drift_factor = -i * 0.05 if i > 35 else 0  # gradual compliance drift
 
         cpu = round(max(5, min(98, base_cpu + time_factor + spike_factor + random.gauss(0, 5))), 1)
-        mem = round(max(30, min(95, base_mem + i * 0.1 + random.gauss(0, 2))), 1)
-        req_rate = round(max(100, base_req + spike_factor * 80 + random.gauss(0, 100)), 0)
-        err_rate = round(max(0, min(15, base_err + (spike_factor * 0.15) + random.gauss(0, 0.3))), 2)
-        p50 = round(max(5, base_p50 + spike_factor * 0.5 + random.gauss(0, 8)), 1)
-        p99 = round(max(50, base_p99 + spike_factor * 3 + random.gauss(0, 40)), 1)
-        conn = round(max(10, base_conn + spike_factor * 1.5 + random.gauss(0, 8)), 0)
-        queue = round(max(0, base_queue + spike_factor * 0.8 + random.gauss(0, 3)), 0)
+        mem = round(max(30, min(95, base_mem + i * 0.08 + random.gauss(0, 2))), 1)
+        comp_score = round(max(45, min(100, base_comp_score + drift_factor + time_factor * 0.3 + spike_factor * (-0.8) + random.gauss(0, 1.5))), 1)
+        violation_rate = round(max(0, min(20, base_violation + spike_factor * 0.2 + (-drift_factor) * 0.1 + random.gauss(0, 0.5))), 2)
+        policy_eval = round(max(50, base_policy_eval + spike_factor * 40 + random.gauss(0, 30)), 0)
+        risk = round(max(5, min(95, base_risk + (-drift_factor) * 0.3 + spike_factor * 0.5 + random.gauss(0, 3))), 1)
+        audit_cov = round(max(50, min(100, base_audit_cov + time_factor * 0.2 + random.gauss(0, 1))), 1)
+        evidence = round(max(30, min(100, base_evidence + i * 0.05 + random.gauss(0, 2))), 1)
 
         cpu_points.append({"timestamp": t, "value": cpu})
         memory_points.append({"timestamp": t, "value": mem})
-        request_rate_points.append({"timestamp": t, "value": req_rate})
-        error_rate_points.append({"timestamp": t, "value": err_rate})
-        p50_latency_points.append({"timestamp": t, "value": p50})
-        p99_latency_points.append({"timestamp": t, "value": p99})
-        active_connections_points.append({"timestamp": t, "value": conn})
-        queue_depth_points.append({"timestamp": t, "value": queue})
+        compliance_score_points.append({"timestamp": t, "value": comp_score})
+        violation_rate_points.append({"timestamp": t, "value": violation_rate})
+        policy_eval_rate_points.append({"timestamp": t, "value": policy_eval})
+        risk_score_points.append({"timestamp": t, "value": risk})
+        audit_coverage_points.append({"timestamp": t, "value": audit_cov})
+        evidence_collection_points.append({"timestamp": t, "value": evidence})
 
     return {
         "system": {
-            "cpu_usage_percent": {"unit": "%", "description": "CPU utilization across all nodes", "data": cpu_points},
-            "memory_usage_percent": {"unit": "%", "description": "Memory utilization (RSS + cache)", "data": memory_points},
-            "active_connections": {"unit": "count", "description": "Active DB + cache connections", "data": active_connections_points},
+            "cpu_usage_percent": {"unit": "%", "description": "CPU utilization across compliance nodes", "data": cpu_points},
+            "memory_usage_percent": {"unit": "%", "description": "Memory utilization (policy engine + audit store)", "data": memory_points},
         },
-        "application": {
-            "request_rate_per_min": {"unit": "req/min", "description": "Total incoming request rate", "data": request_rate_points},
-            "error_rate_percent": {"unit": "%", "description": "5xx error rate as percentage of total", "data": error_rate_points},
-            "latency_p50_ms": {"unit": "ms", "description": "50th percentile response latency", "data": p50_latency_points},
-            "latency_p99_ms": {"unit": "ms", "description": "99th percentile response latency", "data": p99_latency_points},
-            "queue_depth": {"unit": "count", "description": "Message queue pending messages", "data": queue_depth_points},
+        "compliance": {
+            "compliance_score_percent": {"unit": "%", "description": "Aggregate compliance posture score (0-100)", "data": compliance_score_points},
+            "violation_rate_per_min": {"unit": "violations/min", "description": "Policy violation detection rate", "data": violation_rate_points},
+            "policy_evaluations_per_min": {"unit": "evals/min", "description": "Policy engine evaluation throughput", "data": policy_eval_rate_points},
+            "risk_score": {"unit": "score", "description": "Aggregate risk score (lower is better)", "data": risk_score_points},
+            "audit_coverage_percent": {"unit": "%", "description": "Audit trail coverage across all frameworks", "data": audit_coverage_points},
+            "evidence_collection_percent": {"unit": "%", "description": "Evidence collection completeness for current period", "data": evidence_collection_points},
         },
         "summary": {
             "current_cpu": cpu_points[-1]["value"],
             "current_memory": memory_points[-1]["value"],
-            "current_request_rate": request_rate_points[-1]["value"],
-            "current_error_rate": error_rate_points[-1]["value"],
-            "current_p50_latency": p50_latency_points[-1]["value"],
-            "current_p99_latency": p99_latency_points[-1]["value"],
-            "peak_cpu": max(p["value"] for p in cpu_points),
-            "peak_memory": max(p["value"] for p in memory_points),
-            "avg_request_rate": round(sum(p["value"] for p in request_rate_points) / len(request_rate_points), 0),
+            "compliance_score": compliance_score_points[-1]["value"],
+            "violation_rate": violation_rate_points[-1]["value"],
+            "policy_eval_rate": policy_eval_rate_points[-1]["value"],
+            "risk_score": risk_score_points[-1]["value"],
+            "audit_coverage": audit_coverage_points[-1]["value"],
+            "evidence_collection": evidence_collection_points[-1]["value"],
+            "peak_violation_rate": max(p["value"] for p in violation_rate_points),
+            "min_compliance_score": min(p["value"] for p in compliance_score_points),
         }
     }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. STRUCTURED LOGS
+# 3. STRUCTURED LOGS — Compliance & Audit Events
 # ══════════════════════════════════════════════════════════════════════════════
 
 LOG_LEVELS = ["DEBUG", "INFO", "INFO", "INFO", "INFO", "WARN", "WARN", "ERROR", "ERROR", "FATAL"]
 
 LOG_MESSAGES = {
     "DEBUG": [
-        "Cache hit for key user:{user_id}:profile",
-        "Connection pool stats: active={active}, idle={idle}, waiting={waiting}",
-        "Request headers validated successfully",
-        "GRPC message serialized in {elapsed_ms}ms",
-        "Middleware chain executed: {middleware_count} middlewares",
+        "Cache hit for policy cache key: {framework}:{control_id}:v{version}",
+        "Audit trail query: {result_count} events returned in {elapsed_ms}ms",
+        "Risk register cache refreshed for scope: {scope}",
+        "Evidence validation pass: artifact {artifact_id} hash verified",
+        "Control mapping lookup: {control_id} -> {framework} mapped in {elapsed_ms}ms",
     ],
     "INFO": [
-        "Request completed: {method} {path} -> {status_code} in {elapsed_ms}ms",
-        "User {user_id} authenticated successfully via {auth_method}",
-        "Order {order_id} created with {item_count} items, total=${amount}",
-        "Health check passed for {service_name} (latency: {elapsed_ms}ms)",
-        "Deployment v{version} rolled out to {region} ({instances} instances)",
-        "Database migration {migration_id} applied successfully",
-        "Cache invalidated for pattern: user:{user_id}:*",
+        "Compliance check completed: {framework} {check_type} -> {status_code} in {elapsed_ms}ms",
+        "Policy {policy_id} v{version} evaluated against {resource_type} {resource_id}: {verdict}",
+        "Audit event recorded: {event_type} by {user_id} on {resource_type}/{resource_id}",
+        "Risk assessment completed for scope {scope}: score={score}, level={risk_level}",
+        "Data classification applied: {resource_type}/{resource_id} -> {classification}",
+        "Evidence collected for control {control_id}: artifact {artifact_id} stored",
+        "Access review completed for user {user_id}: {access_count} entitlements reviewed",
+        "Compliance report generated: {report_type} for {framework} period {period}",
+        "Framework drift check passed: {framework} posture stable at {score}%",
+        "Control effectiveness updated: {control_id} now {effectiveness}%",
     ],
     "WARN": [
-        "High memory usage detected: {percent}% utilization (threshold: 85%)",
-        "Slow query detected: {query_type} on {table} took {elapsed_ms}ms (threshold: 200ms)",
-        "Rate limit approaching for client {client_id}: {count}/{limit} requests",
-        "Retry attempt {attempt}/{max_retries} for {service_name} after timeout",
-        "Certificate for {domain} expires in {days} days",
-        "Connection pool exhaustion imminent: {active}/{max_connections} connections used",
+        "Compliance score trending down: {framework} at {score}% (threshold: {threshold}% - breach in {days_until_breach}d)",
+        "Policy conflict detected between {policy_a} and {policy_b} for resource {resource_id}",
+        "Evidence gap identified: control {control_id} has {gap_count} missing artifacts",
+        "Audit trail integrity warning: sequence gap between {start_seq} and {end_seq}",
+        "Risk score elevated: scope {scope} now at {score} (previous: {previous_score})",
+        "Overdue access review: {overdue_count} reviews past SLA for team {team}",
+        "Data retention policy approaching expiry: {resource_count} resources in scope",
+        "Certificate for compliance signing authority expires in {days} days",
     ],
     "ERROR": [
-        "Failed to process payment for order {order_id}: {error_code} - {error_msg}",
-        "Database connection timeout after {elapsed_ms}ms: {connection_string}",
-        "Unhandled exception in {service_name}.{function_name}: {error_msg}",
-        "Kafka producer failed to publish to topic {topic}: {error_msg}",
-        "TLS handshake failed with upstream {upstream}: {error_msg}",
-        "Request to {service_name} failed after {max_retries} retries: circuit breaker OPEN",
+        "Policy violation detected: {policy_id} violated by {resource_type}/{resource_id} - {violation_type}",
+        "Compliance check FAILED: {framework} {check_type} - {failure_reason}",
+        "Unauthorized access attempt: user {user_id} to {resource_type}/{resource_id} (denied)",
+        "Audit evidence tampering alert: artifact {artifact_id} hash mismatch (expected vs actual)",
+        "Risk assessment timeout: scope {scope} evaluation exceeded {timeout_ms}ms SLA",
+        "Framework drift detected: {framework} score dropped {drop_points}pts in {hours}h",
+        "Control evidence chain broken: {control_id} missing link to {framework} requirement",
+        "Compliance reporting failure: {report_type} generation failed - {error_msg}",
     ],
     "FATAL": [
-        "Out of memory: heap allocation failed for {size_mb}MB request in {service_name}",
-        "Data corruption detected in table {table}: checksum mismatch at block {block_id}",
-        "Primary node lost quorum: {alive_nodes}/{total_nodes} nodes responding",
+        "CRITICAL COMPLIANCE BREACH: {framework} posture below minimum threshold ({score}% < {threshold}%)",
+        "Audit trail corruption: immutable log integrity compromised for period {period}",
+        "Complete policy engine failure: all evaluations suspended for {framework}",
     ],
 }
 
 def generate_logs(num_logs=200):
-    """Generate structured log entries across multiple services."""
     logs = []
 
     for i in range(num_logs):
@@ -277,57 +354,56 @@ def generate_logs(num_logs=200):
         message_template = rand_choice(LOG_MESSAGES[level])
         timestamp = ts(minutes_ago=random.randint(0, 60), seconds_offset=random.randint(0, 59))
 
-        # Fill in template variables
         message = message_template.format(
-            user_id=random.randint(1000, 9999),
-            active=random.randint(5, 50),
-            idle=random.randint(2, 20),
-            waiting=random.randint(0, 10),
-            elapsed_ms=rand_latency(1, 2000),
-            middleware_count=random.randint(3, 8),
-            method=rand_choice(["GET", "POST", "PUT", "DELETE"]),
-            path=rand_choice(["/api/users", "/api/orders", "/api/products", "/api/auth", "/api/health"]),
-            status_code=rand_choice([200, 200, 200, 201, 301, 400, 401, 404, 500, 502, 503]),
-            auth_method=rand_choice(["JWT", "OAuth2", "API Key", "mTLS"]),
-            order_id=f"ORD-{random.randint(10000, 99999)}",
-            item_count=random.randint(1, 20),
-            amount=f"{random.uniform(10, 500):.2f}",
-            service_name=rand_choice(SERVICES),
-            version=f"v{random.randint(1,5)}.{random.randint(0,20)}.{random.randint(0,99)}",
-            region=rand_choice(["us-east-1", "eu-west-1", "ap-southeast-1"]),
-            instances=random.randint(2, 10),
-            migration_id=f"mig_{random.randint(100,999)}_{uuid.uuid4().hex[:6]}",
-            percent=random.randint(80, 98),
-            query_type=rand_choice(["SELECT", "JOIN", "UPDATE", "INSERT"]),
-            table=rand_choice(["users", "orders", "products", "payments", "sessions"]),
-            client_id=f"client_{uuid.uuid4().hex[:8]}",
-            count=random.randint(80, 100),
-            limit=100,
-            attempt=random.randint(1, 3),
-            max_retries=3,
-            domain=rand_choice(["api.example.com", "auth.example.com", "cdn.example.com"]),
+            framework=rand_choice(COMPLIANCE_FRAMEWORKS),
+            control_id=f"CTL-{random.randint(100,999)}",
+            version=random.randint(1, 5),
+            result_count=random.randint(10, 500),
+            elapsed_ms=rand_latency(1, 3000),
+            scope=rand_choice(["organization", "business-unit:A", "business-unit:B", "product:X", "env:production"]),
+            artifact_id=f"EVD-{uuid.uuid4().hex[:8].upper()}",
+            check_type=rand_choice(["SOC2.A1", "SOC2.A2", "GDPR.Art.6", "GDPR.Art.25", "HIPAA.164.312", "ISO.A.9", "PCI.1.2"]),
+            status_code=rand_choice([200, 200, 200, 201, 403, 500]),
+            policy_id=f"POL-{random.randint(1000,9999)}",
+            resource_type=rand_choice(["data-store", "api-endpoint", "service-account", "user-account", "infrastructure", "application"]),
+            resource_id=f"{random.choice(['RES', 'SRV', 'USR', 'DS'])}-{uuid.uuid4().hex[:8].upper()}",
+            verdict=rand_choice(["COMPLIANT", "COMPLIANT", "COMPLIANT", "NON-COMPLIANT", "CONDITIONAL"]),
+            event_type=rand_choice(["access", "modification", "deletion", "creation", "export", "policy-change"]),
+            user_id=f"USR-{random.randint(1000,9999)}",
+            score=random.randint(15, 95),
+            risk_level=rand_choice(["LOW", "MEDIUM", "MEDIUM", "HIGH", "CRITICAL"]),
+            classification=rand_choice(["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]),
+            report_type=rand_choice(["SOC2-Type-II", "GDPR-DPIA", "HIPAA-Security", "ISO-27001-Statement", "Risk-Register"]),
+            period=f"{random.choice(['Q1', 'Q2', 'Q3', 'Q4'])}-{random.randint(2023, 2026)}",
+            effectiveness=random.randint(40, 99),
+            policy_a=f"POL-{random.randint(1000,9999)}",
+            policy_b=f"POL-{random.randint(1000,9999)}",
+            gap_count=random.randint(1, 8),
+            start_seq=random.randint(10000, 99990),
+            end_seq=random.randint(10000, 99990),
+            previous_score=random.randint(20, 80),
+            overdue_count=random.randint(1, 15),
+            team=rand_choice(["engineering", "product", "security", "finance", "legal"]),
+            resource_count=random.randint(50, 5000),
             days=random.randint(1, 30),
-            max_connections=100,
-            error_code=rand_choice(["PAYMENT_DECLINED", "INSUFFICIENT_FUNDS", "TIMEOUT", "CONNECTION_REFUSED", "SSL_ERROR"]),
-            error_msg=rand_choice(["Connection refused", "Operation timed out", "Invalid argument", "Resource exhausted", "Internal error"]),
-            function_name=rand_choice(["handleRequest", "processOrder", "validateToken", "sendNotification"]),
-            topic=rand_choice(["orders.created", "payments.processed", "users.updated", "inventory.reserved"]),
-            upstream=rand_choice(["postgres-primary", "redis-cluster", "kafka-broker-1"]),
-            size_mb=random.randint(128, 2048),
-            block_id=random.randint(0, 9999),
-            alive_nodes=random.randint(1, 3),
-            total_nodes=5,
-            connection_string="postgresql://***:***@db-primary:5432/production",
+            violation_type=rand_choice(["access-control", "data-retention", "encryption-missing", "logging-gap", "separation-of-duty"]),
+            failure_reason=rand_choice(["evidence-missing", "control-not-implemented", "policy-outdated", "threshold-exceeded"]),
+            timeout_ms=30000,
+            drop_points=random.randint(2, 15),
+            hours=random.randint(1, 48),
+            error_msg=rand_choice(["resource-exhausted", "timeout-exceeded", "data-corruption", "external-service-unavailable"]),
+            threshold=rand_choice([70, 75, 80, 85]),
+            days_until_breach=random.randint(1, 14),
+            access_count=random.randint(5, 50),
         )
 
-        # Only include fields relevant to the log level
         fields = {
             "service": service,
             "instance": f"{service}-{random.randint(1,5)}",
             "traceId": str(uuid.uuid4())[:16],
             "spanId": str(uuid.uuid4())[:16],
-            "hostname": f"{service}-{random.choice(['a','b','c'])}-{random.randint(1,10)}.{rand_choice(['us-east', 'eu-west'])}.compute.internal",
-            "version": f"v{random.randint(1,5)}.{random.randint(0,20)}.{random.randint(0,99)}",
+            "hostname": f"{service}-{random.choice(['a','b','c'])}-{random.randint(1,10)}.{rand_choice(['us-east', 'eu-west', 'ap-south'])}.compliance.internal",
+            "version": f"v{random.randint(1,3)}.{random.randint(0,15)}.{random.randint(0,50)}",
         }
 
         if level in ("WARN", "ERROR", "FATAL"):
@@ -341,107 +417,123 @@ def generate_logs(num_logs=200):
             "fields": fields,
         })
 
-    # Sort by timestamp descending (most recent first)
     logs.sort(key=lambda x: x["timestamp"], reverse=True)
     return logs
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4. ALERTING
+# 4. COMPLIANCE ALERTING
 # ══════════════════════════════════════════════════════════════════════════════
 
 ALERT_SEVERITIES = ["critical", "critical", "high", "high", "high", "medium", "medium", "low", "info"]
-
 ALERT_STATES = ["firing", "firing", "firing", "resolved", "resolved", "acknowledged"]
 
 def generate_alert_rules():
-    """Define alerting rules for the observability stack."""
     return [
         {
             "id": "alert-rule-001",
-            "name": "HighErrorRate",
-            "description": "Trigger when 5xx error rate exceeds 5% over 5 minutes",
-            "condition": "error_rate_percent > 5 for 5m",
+            "name": "ComplianceScoreBreach",
+            "description": "Trigger when aggregate compliance posture drops below 75% for any framework",
+            "condition": "compliance_score_percent < 75 for 5m",
             "severity": "critical",
-            "service": "api-gateway",
-            "channel": "#incidents-critical",
-            "runbook": "https://wiki/runbooks/high-error-rate",
+            "service": "compliance-checker",
+            "channel": "#compliance-critical",
+            "runbook": "https://wiki/runbooks/compliance-score-breach",
         },
         {
             "id": "alert-rule-002",
-            "name": "HighLatencyP99",
-            "description": "Trigger when P99 latency exceeds 1000ms for 3 minutes",
-            "condition": "latency_p99_ms > 1000 for 3m",
-            "severity": "high",
-            "service": "api-gateway",
-            "channel": "#incidents-high",
-            "runbook": "https://wiki/runbooks/high-latency",
+            "name": "PolicyViolationSurge",
+            "description": "Trigger when violation rate exceeds 5/min over 3 minutes",
+            "condition": "violation_rate_per_min > 5 for 3m",
+            "severity": "critical",
+            "service": "policy-engine",
+            "channel": "#compliance-critical",
+            "runbook": "https://wiki/runbooks/policy-violation-surge",
         },
         {
             "id": "alert-rule-003",
-            "name": "MemoryUsageCritical",
-            "description": "Trigger when memory usage exceeds 90% for 5 minutes",
-            "condition": "memory_usage_percent > 90 for 5m",
-            "severity": "critical",
-            "service": "infra-monitoring",
-            "channel": "#incidents-critical",
-            "runbook": "https://wiki/runbooks/memory-pressure",
+            "name": "AuditTrailGap",
+            "description": "Trigger when audit trail sequence gap exceeds 10 events",
+            "condition": "audit_gap_count > 10 for 2m",
+            "severity": "high",
+            "service": "audit-logger",
+            "channel": "#compliance-high",
+            "runbook": "https://wiki/runbooks/audit-trail-gap",
         },
         {
             "id": "alert-rule-004",
-            "name": "DatabaseConnectionPoolExhaustion",
-            "description": "Trigger when active DB connections exceed 90% of pool size",
-            "condition": "active_connections > 90 for 2m",
+            "name": "RiskScoreSpike",
+            "description": "Trigger when risk score exceeds 70 (high risk threshold)",
+            "condition": "risk_score > 70 for 5m",
             "severity": "high",
-            "service": "postgres-db",
-            "channel": "#incidents-high",
-            "runbook": "https://wiki/runbooks/db-connection-exhaustion",
+            "service": "risk-assessor",
+            "channel": "#compliance-high",
+            "runbook": "https://wiki/runbooks/risk-score-spike",
         },
         {
             "id": "alert-rule-005",
-            "name": "PaymentServiceDown",
-            "description": "Trigger when payment service health check fails 3 consecutive times",
-            "condition": "health_check_failures > 3 for 1m",
+            "name": "GDPRDataBreach",
+            "description": "Trigger when unauthorized PII access is detected",
+            "condition": "unauthorized_pii_access > 0 for 1m",
             "severity": "critical",
-            "service": "payment-service",
-            "channel": "#incidents-critical",
-            "runbook": "https://wiki/runbooks/payment-service-down",
+            "service": "data-governor",
+            "channel": "#compliance-critical",
+            "runbook": "https://wiki/runbooks/gdpr-data-breach",
         },
         {
             "id": "alert-rule-006",
-            "name": "QueueDepthHigh",
-            "description": "Trigger when message queue depth exceeds 500 messages",
-            "condition": "queue_depth > 500 for 5m",
+            "name": "EvidenceCollectionSLABreach",
+            "description": "Trigger when evidence collection completeness drops below 70%",
+            "condition": "evidence_collection_percent < 70 for 10m",
             "severity": "medium",
-            "service": "message-queue",
-            "channel": "#incidents-medium",
-            "runbook": "https://wiki/runbooks/queue-backlog",
+            "service": "evidence-collector",
+            "channel": "#compliance-medium",
+            "runbook": "https://wiki/runbooks/evidence-collection-sla",
         },
         {
             "id": "alert-rule-007",
-            "name": "CPUUsageWarning",
-            "description": "Trigger when CPU usage exceeds 80% for 10 minutes",
-            "condition": "cpu_usage_percent > 80 for 10m",
-            "severity": "medium",
-            "service": "infra-monitoring",
-            "channel": "#incidents-medium",
-            "runbook": "https://wiki/runbooks/high-cpu",
+            "name": "SOC2FrameworkDrift",
+            "description": "Trigger when SOC2 compliance score drops more than 5pts in 1 hour",
+            "condition": "soc2_score_delta < -5 for 60m",
+            "severity": "high",
+            "service": "control-mapper",
+            "channel": "#compliance-high",
+            "runbook": "https://wiki/runbooks/soc2-framework-drift",
         },
         {
             "id": "alert-rule-008",
-            "name": "CertificateExpiry",
-            "description": "Trigger when TLS certificate expires within 7 days",
-            "condition": "certificate_expiry_days < 7",
-            "severity": "low",
-            "service": "infra-monitoring",
-            "channel": "#ops-notifications",
-            "runbook": "https://wiki/runbooks/cert-renewal",
+            "name": "AccessReviewOverdue",
+            "description": "Trigger when more than 10 access reviews are past their SLA deadline",
+            "condition": "overdue_access_reviews > 10",
+            "severity": "medium",
+            "service": "identity-verifier",
+            "channel": "#compliance-medium",
+            "runbook": "https://wiki/runbooks/access-review-overdue",
+        },
+        {
+            "id": "alert-rule-009",
+            "name": "RegulatoryDeadlineApproaching",
+            "description": "Trigger when a regulatory submission deadline is within 7 days",
+            "condition": "days_until_deadline < 7",
+            "severity": "high",
+            "service": "reporting-service",
+            "channel": "#compliance-high",
+            "runbook": "https://wiki/runbooks/regulatory-deadline",
+        },
+        {
+            "id": "alert-rule-010",
+            "name": "ComplianceEngineUnhealthy",
+            "description": "Trigger when policy engine health check fails 3 consecutive times",
+            "condition": "health_check_failures > 3 for 1m",
+            "severity": "critical",
+            "service": "policy-engine",
+            "channel": "#incidents-critical",
+            "runbook": "https://wiki/runbooks/compliance-engine-down",
         },
     ]
 
 
 def generate_triggered_alerts(num_alerts=25):
-    """Generate triggered alert instances."""
     rules = generate_alert_rules()
     alerts = []
 
@@ -451,8 +543,16 @@ def generate_triggered_alerts(num_alerts=25):
         state = rand_choice(ALERT_STATES)
         fired_at = ts(minutes_ago=random.randint(0, 55))
 
+        # Parse threshold from condition
+        condition_parts = rule["condition"].split(">")[-1].split()[0] if ">" in rule["condition"] else \
+                          rule["condition"].split("<")[-1].split()[0] if "<" in rule["condition"] else "0"
+        try:
+            threshold = float(condition_parts)
+        except ValueError:
+            threshold = 0
+
         alert = {
-            "alertId": f"ALERT-{uuid.uuid4().hex[:8].upper()}",
+            "alertId": f"CALERT-{uuid.uuid4().hex[:8].upper()}",
             "ruleId": rule["id"],
             "ruleName": rule["name"],
             "description": rule["description"],
@@ -464,18 +564,16 @@ def generate_triggered_alerts(num_alerts=25):
             "runbook": rule["runbook"],
             "labels": {
                 "env": rand_choice(["production", "production", "staging"]),
-                "region": rand_choice(["us-east-1", "eu-west-1", "ap-southeast-1"]),
-                "team": rand_choice(["platform", "payments", "backend", "infra"]),
+                "framework": rand_choice(COMPLIANCE_FRAMEWORKS),
+                "team": rand_choice(["compliance", "security", "governance", "legal", "engineering"]),
             },
             "annotations": {
                 "summary": f"{rule['name']} triggered on {rule['service']}",
-                "dashboard": f"https://grafana.internal/d/{rule['id']}",
+                "dashboard": f"https://compliance-dashboard.internal/d/{rule['id']}",
             },
             "metrics": {
-                "current_value": round(random.uniform(0.5, 3.0) * float(rule["condition"].split(">")[1].split()[0]), 2)
-                if ">" in rule["condition"] else None,
-                "threshold": float(rule["condition"].split(">")[1].split()[0])
-                if ">" in rule["condition"] else None,
+                "current_value": round(random.uniform(0.5, 2.5) * threshold, 2),
+                "threshold": threshold,
             },
         }
 
@@ -494,21 +592,22 @@ def generate_triggered_alerts(num_alerts=25):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    print("=" * 60)
-    print("  Observability Infrastructure Data Generator")
-    print("=" * 60)
+    print("=" * 65)
+    print("  Autonomous Compliance – Observability Data Generator")
+    print("=" * 65)
 
-    print("\n[1/4] Generating distributed traces...")
+    print("\n[1/4] Generating compliance workflow traces...")
     traces = generate_traces(num_traces=50)
     print(f"       Generated {len(traces)} traces with "
           f"{sum(t['spanCount'] for t in traces)} total spans")
+    print(f"       Frameworks: {', '.join(COMPLIANCE_FRAMEWORKS)}")
 
-    print("[2/4] Generating system & application metrics...")
+    print("[2/4] Generating compliance & system metrics...")
     metrics = generate_metrics(num_points=60)
-    print(f"       Generated {len(metrics['system']) + len(metrics['application'])} metric series "
-          f"({len(metrics['system']['cpu_usage_percent']['data'])} data points each)")
+    print(f"       Generated {len(metrics['system']) + len(metrics['compliance'])} metric series "
+          f"({len(metrics['compliance']['compliance_score_percent']['data'])} data points each)")
 
-    print("[3/4] Generating structured logs...")
+    print("[3/4] Generating compliance audit logs...")
     logs = generate_logs(num_logs=200)
     level_counts = {}
     for log in logs:
@@ -517,7 +616,7 @@ def main():
     for level, count in sorted(level_counts.items()):
         print(f"         {level}: {count}")
 
-    print("[4/4] Generating alerting rules & triggered alerts...")
+    print("[4/4] Generating compliance alerting rules & triggered alerts...")
     alert_rules = generate_alert_rules()
     triggered_alerts = generate_triggered_alerts(num_alerts=25)
     severity_counts = {}
@@ -528,11 +627,11 @@ def main():
     for sev, count in sorted(severity_counts.items()):
         print(f"         {sev}: {count}")
 
-    # Assemble the full output
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
-        "generator": "observability-infrastructure-script",
-        "version": "1.0.0",
+        "generator": "autonomous-compliance-observability",
+        "version": "2.0.0",
+        "project": "Autonomous Compliance",
         "data": {
             "traces": traces,
             "metrics": metrics,
@@ -552,17 +651,17 @@ def main():
             "firingAlerts": len([a for a in triggered_alerts if a["state"] == "firing"]),
             "resolvedAlerts": len([a for a in triggered_alerts if a["state"] == "resolved"]),
             "services": len(SERVICES),
+            "frameworks": len(COMPLIANCE_FRAMEWORKS),
         }
     }
 
-    # Write to file
     with open(OUTPUT_PATH, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"\n{'=' * 60}")
+    print(f"\n{'=' * 65}")
     print(f"  Output saved to: {OUTPUT_PATH}")
     print(f"  File size: {len(json.dumps(output)):,} bytes")
-    print(f"{'=' * 60}")
+    print(f"{'=' * 65}")
 
     return output
 

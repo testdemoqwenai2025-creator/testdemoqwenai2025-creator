@@ -5,12 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Bell, ExternalLink, Shield, AlertTriangle, AlertCircle, Info, CheckCircle2 } from 'lucide-react'
 
@@ -36,19 +31,9 @@ interface TriggeredAlert {
   firedAt: string
   channel: string
   runbook: string
-  labels: {
-    env: string
-    region: string
-    team: string
-  }
-  annotations: {
-    summary: string
-    dashboard: string
-  }
-  metrics: {
-    current_value: number | null
-    threshold: number | null
-  }
+  labels: { env: string; framework: string; team: string }
+  annotations: { summary: string; dashboard: string }
+  metrics: { current_value: number | null; threshold: number | null }
 }
 
 interface AlertsPanelProps {
@@ -82,13 +67,12 @@ export function AlertsPanel({ rules, alerts }: AlertsPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Alert Rules */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Alert Rules
+              Compliance Alert Rules
             </CardTitle>
             <Badge variant="outline">{rules.length} rules defined</Badge>
           </div>
@@ -114,7 +98,7 @@ export function AlertsPanel({ rules, alerts }: AlertsPanelProps) {
                     <p className="text-xs text-muted-foreground">{rule.description}</p>
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
                       <code className="bg-muted px-1.5 py-0.5 rounded">{rule.condition}</code>
-                      <span className="truncate">{rule.channel}</span>
+                      <span className="truncate">{rule.service}</span>
                     </div>
                   </div>
                 </div>
@@ -124,13 +108,12 @@ export function AlertsPanel({ rules, alerts }: AlertsPanelProps) {
         </CardContent>
       </Card>
 
-      {/* Triggered Alerts */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
-              Triggered Alerts
+              Triggered Compliance Alerts
             </CardTitle>
             <div className="flex gap-2">
               <Badge variant="destructive" className="text-xs">{firingCount} firing</Badge>
@@ -148,7 +131,7 @@ export function AlertsPanel({ rules, alerts }: AlertsPanelProps) {
                   <TableHead>Severity</TableHead>
                   <TableHead>Alert</TableHead>
                   <TableHead>Service</TableHead>
-                  <TableHead>Environment</TableHead>
+                  <TableHead>Framework</TableHead>
                   <TableHead>Fired At</TableHead>
                   <TableHead>Metric</TableHead>
                   <TableHead>Actions</TableHead>
@@ -186,9 +169,9 @@ export function AlertsPanel({ rules, alerts }: AlertsPanelProps) {
                         <Badge variant="outline" className="text-[10px]">{alert.service}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="text-[10px] text-muted-foreground">
-                          {alert.labels.env}/{alert.labels.region}
-                        </div>
+                        <Badge className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300">
+                          {alert.labels.framework}
+                        </Badge>
                         <div className="text-[10px] text-muted-foreground">{alert.labels.team}</div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">

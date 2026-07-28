@@ -10,14 +10,15 @@ import {
   Activity,
   Clock,
   FileText,
-  Bell,
+  Shield,
   Layers,
   Cpu,
-  Shield,
   Github,
   RefreshCw,
+  ShieldCheck,
   Database,
   Zap,
+  Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -30,6 +31,7 @@ interface ObservabilityData {
   generatedAt: string
   generator: string
   version: string
+  project: string
   statistics: {
     totalTraces: number
     totalSpans: number
@@ -40,10 +42,15 @@ interface ObservabilityData {
     firingAlerts: number
     resolvedAlerts: number
     services: number
+    frameworks: number
   }
   data: {
     traces: any[]
-    metrics: any
+    metrics: {
+      system: Record<string, any>
+      compliance: Record<string, any>
+      summary: Record<string, number>
+    }
     logs: any[]
     alerting: {
       rules: any[]
@@ -51,6 +58,8 @@ interface ObservabilityData {
     }
   }
 }
+
+const FRAMEWORKS = ['SOC2', 'GDPR', 'HIPAA', 'ISO27001', 'PCI-DSS', 'NIST-CSF', 'CIS']
 
 export default function Home() {
   const [data, setData] = useState<ObservabilityData | null>(null)
@@ -79,7 +88,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading observability data...</p>
+          <p className="text-muted-foreground text-sm">Loading compliance observability data...</p>
         </div>
       </div>
     )
@@ -92,20 +101,21 @@ export default function Home() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Activity className="h-6 w-6 text-emerald-500" />
-              <h1 className="text-lg font-bold tracking-tight">Observability Dashboard</h1>
+              <ShieldCheck className="h-6 w-6 text-emerald-500" />
+              <h1 className="text-lg font-bold tracking-tight">Autonomous Compliance</h1>
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex">Observability</Badge>
             </div>
-            <Badge variant="outline" className="text-xs hidden sm:inline-flex">
-              <Database className="h-3 w-3 mr-1" />
-              {data.statistics.services} services
-            </Badge>
-            <Badge variant="outline" className="text-xs hidden sm:inline-flex">
+            <Badge variant="outline" className="text-xs hidden md:inline-flex">
               <Layers className="h-3 w-3 mr-1" />
-              {data.statistics.totalTraces} traces
+              {data.statistics.frameworks} frameworks
+            </Badge>
+            <Badge variant="outline" className="text-xs hidden md:inline-flex">
+              <Activity className="h-3 w-3 mr-1" />
+              {data.statistics.services} services
             </Badge>
             {data.statistics.firingAlerts > 0 && (
               <Badge variant="destructive" className="text-xs animate-pulse">
-                <Bell className="h-3 w-3 mr-1" />
+                <Shield className="h-3 w-3 mr-1" />
                 {data.statistics.firingAlerts} firing
               </Badge>
             )}
@@ -116,11 +126,7 @@ export default function Home() {
               Refresh
             </Button>
             <Button variant="outline" size="sm" className="text-xs" asChild>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href="https://github.com/z-ai-oss/autonomous-compliance" target="_blank" rel="noopener noreferrer">
                 <Github className="h-3.5 w-3.5 mr-1" />
                 GitHub
               </a>
@@ -147,7 +153,7 @@ export default function Home() {
             </TabsTrigger>
             <TabsTrigger value="logs" className="text-xs gap-1.5">
               <FileText className="h-3.5 w-3.5" />
-              Logs
+              Audit Logs
             </TabsTrigger>
             <TabsTrigger value="alerts" className="text-xs gap-1.5">
               <Shield className="h-3.5 w-3.5" />
@@ -161,20 +167,20 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="border-emerald-500/20 bg-emerald-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-emerald-500">{data.statistics.services}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Services Monitored</div>
+                  <div className="text-3xl font-bold text-emerald-500">{data.statistics.frameworks}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Frameworks Monitored</div>
                 </CardContent>
               </Card>
-              <Card className="border-blue-500/20 bg-blue-500/5">
+              <Card className="border-purple-500/20 bg-purple-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-blue-500">{data.statistics.totalTraces}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Distributed Traces</div>
+                  <div className="text-3xl font-bold text-purple-500">{data.statistics.totalTraces}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Compliance Traces</div>
                 </CardContent>
               </Card>
               <Card className="border-amber-500/20 bg-amber-500/5">
                 <CardContent className="p-4 text-center">
                   <div className="text-3xl font-bold text-amber-500">{data.statistics.totalLogs}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Log Entries</div>
+                  <div className="text-xs text-muted-foreground mt-1">Audit Events</div>
                 </CardContent>
               </Card>
               <Card className="border-red-500/20 bg-red-500/5">
@@ -188,7 +194,25 @@ export default function Home() {
             {/* KPI Cards */}
             <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary} />
 
-            {/* Mini Metrics Preview */}
+            {/* Framework Coverage Badges */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">Compliance Frameworks</h3>
+                  <span className="text-xs text-muted-foreground">{data.statistics.frameworks} active</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {FRAMEWORKS.map((fw) => (
+                    <Badge key={fw} variant="outline" className="text-xs gap-1 py-1 px-3">
+                      <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                      {fw}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Mini Metrics */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold">Quick Metrics Glance</h3>
@@ -198,31 +222,30 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <MetricsQuickChart
-                  title="CPU Usage"
-                  data={data.data.metrics.system.cpu_usage_percent.data}
+                  title="Compliance Score"
+                  data={data.data.metrics.compliance.compliance_score_percent.data}
                   unit="%"
-                  color="#ef4444"
-                  threshold={80}
-                />
-                <MetricsQuickChart
-                  title="Request Rate"
-                  data={data.data.metrics.application.request_rate_per_min.data}
-                  unit="req/min"
                   color="#22c55e"
+                  threshold={75}
                 />
                 <MetricsQuickChart
-                  title="Error Rate"
-                  data={data.data.metrics.application.error_rate_percent.data}
-                  unit="%"
+                  title="Violation Rate"
+                  data={data.data.metrics.compliance.violation_rate_per_min.data}
+                  unit="violations/min"
                   color="#ef4444"
                   threshold={5}
                 />
                 <MetricsQuickChart
-                  title="P99 Latency"
-                  data={data.data.metrics.application.latency_p99_ms.data}
-                  unit="ms"
+                  title="Risk Score"
+                  data={data.data.metrics.compliance.risk_score.data}
+                  unit="score"
+                  color="#f97316"
+                />
+                <MetricsQuickChart
+                  title="Audit Coverage"
+                  data={data.data.metrics.compliance.audit_coverage_percent.data}
+                  unit="%"
                   color="#8b5cf6"
-                  threshold={1000}
                 />
               </div>
             </div>
@@ -257,14 +280,14 @@ export default function Home() {
       <footer className="border-t mt-auto">
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Activity className="h-3.5 w-3.5" />
-            <span>Observability Infrastructure Dashboard</span>
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Autonomous Compliance — Observability Infrastructure</span>
             <Separator orientation="vertical" className="h-3" />
             <span>Data generated: {new Date(data.generatedAt).toLocaleString()} UTC</span>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[10px]">{data.version}</Badge>
-            <span>Built with Next.js + Recharts + shadcn/ui</span>
+            <span>Next.js + Recharts + shadcn/ui</span>
           </div>
         </div>
       </footer>
@@ -272,15 +295,8 @@ export default function Home() {
   )
 }
 
-// ── Quick Mini Chart (for Overview tab) ──────────────────────────────────────
-
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 
 function MetricsQuickChart({
@@ -337,6 +353,9 @@ function MetricsQuickChart({
                 }}
                 formatter={(value: number) => [`${value} ${unit}`, title]}
               />
+              {threshold !== undefined && (
+                <Line type="monotone" dataKey={() => threshold} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1} dot={false} />
+              )}
               <Area
                 type="monotone"
                 dataKey="value"
@@ -351,3 +370,5 @@ function MetricsQuickChart({
     </Card>
   )
 }
+
+import { Line } from 'recharts'

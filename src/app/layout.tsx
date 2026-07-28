@@ -14,24 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Observability Dashboard - Tracing, Metrics, Logging & Alerting",
-  description: "Full-stack observability infrastructure dashboard with distributed tracing, system metrics, structured logs, and intelligent alerting.",
-  keywords: ["observability", "monitoring", "tracing", "metrics", "logging", "alerting", "dashboard", "Next.js"],
+  title: "Autonomous Compliance — Observability Dashboard",
+  description: "Full-stack observability infrastructure for Autonomous Compliance with distributed tracing, compliance metrics, audit logs, and intelligent alerting across SOC2, GDPR, HIPAA, ISO27001, PCI-DSS, NIST-CSF, and CIS frameworks.",
+  keywords: ["autonomous compliance", "observability", "monitoring", "tracing", "compliance", "SOC2", "GDPR", "HIPAA", "ISO27001", "dashboard", "Next.js"],
   authors: [{ name: "Z.ai Team" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
   openGraph: {
-    title: "Observability Dashboard",
-    description: "Full-stack observability infrastructure with distributed tracing, metrics, logging & alerting",
+    title: "Autonomous Compliance — Observability Dashboard",
+    description: "Observability infrastructure for autonomous compliance with distributed tracing, compliance metrics, audit logs & alerting",
     url: "https://chat.z.ai",
     siteName: "Z.ai",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Observability Dashboard",
-    description: "Full-stack observability infrastructure with distributed tracing, metrics, logging & alerting",
+    title: "Autonomous Compliance — Observability Dashboard",
+    description: "Observability infrastructure for autonomous compliance with distributed tracing, compliance metrics, audit logs & alerting",
   },
 };
 
