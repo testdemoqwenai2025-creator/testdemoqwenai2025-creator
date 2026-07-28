@@ -1,12 +1,48 @@
 # Autonomous Regulatory Compliance Agent Swarm — Observability
 
-[![Version](https://img.shields.io/badge/version-5.1.0-emerald.svg)]()
+[![Version](https://img.shields.io/badge/version-5.2.0-emerald.svg)]()
 [![Generator Stages](https://img.shields.io/badge/generator-7%20stages-blue.svg)]()
 [![API Routes](https://img.shields.io/badge/API%20routes-16-purple.svg)]()
 [![Dashboard Tabs](https://img.shields.io/badge/dashboard%20tabs-13-orange.svg)]()
 [![Live](https://img.shields.io/badge/live-GitHub%20Pages-success.svg)](https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/)
 
 Full-stack observability infrastructure for the **Autonomous Regulatory Compliance Agent Swarm** as specified in the Technical Specification (PDF) and `SKILLS.md` capability matrix. Implements a push-based 4-agent cascade (Ingestion → Legal Analyst → Prosecutor → Defender) with full imperative traceability per PDF §9.2, plus a 22-component HIPAA Governance Orchestrator (Stage 7) mirroring the prototype in `download/reference/hipaa_governance_orchestrator.py`.
+
+## Frontend Endpoint (Dynamic Dashboard)
+
+The dynamic Next.js dashboard is served from this container via Caddy → Next.js. The public endpoint is provisioned by the Space-Z preview gateway and has the canonical form:
+
+```
+https://preview-<bot-id>.space-z.ai/
+```
+
+where `<bot-id>` is the runtime identifier assigned by the Space-Z platform to this container (visible inside the container as `FC_FUNCTION_NAME`). The gateway routes `preview-<bot-id>.space-z.ai` → container port 81 (Caddy) → `localhost:3000` (Next.js dev server).
+
+| Surface | URL | Notes |
+|---------|-----|-------|
+| **Public dashboard** | `https://preview-<bot-id>.space-z.ai/` | Routes through the Space-Z preview gateway → Caddy → Next.js |
+| **Local dashboard** | `http://localhost:3000/` | Direct Next.js dev server (run `bun run dev`) |
+| **Local via Caddy** | `http://localhost:81/` | Same path the gateway takes internally |
+| **Static mirror** | https://testdemoqwenai2025-creator.github.io/Autonomous_Regulatory_Compliance_Agent_Swarm/ | Always-on GitHub Pages snapshot (no middleware) |
+
+All 16 API routes are reachable on the same host. For example, on the public endpoint:
+
+```bash
+# Verify the live middleware from the public URL
+curl -sI https://preview-<bot-id>.space-z.ai/api/observability | grep -i "x-served-at"
+# → X-Served-At: 2026-07-28T17:46:43.689Z  (fresh timestamp per call)
+
+# Two consecutive fetches return different KPI values (jittered)
+curl -s https://preview-<bot-id>.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+curl -s https://preview-<bot-id>.space-z.ai/api/observability | jq '.data.metrics.summary.current_compliance_posture'
+
+# Trigger the Python middleware regenerator
+curl -s -X POST https://preview-<bot-id>.space-z.ai/api/observability/regenerate | jq '{runId, generatedAt, version}'
+```
+
+> The bot-id is allocated by the Space-Z platform at container start. Inside the container it is exposed via `FC_FUNCTION_NAME`. If the gateway returns 404 for the URL above, the platform has not yet registered the routing rule for this container — try refreshing the preview in the chat UI to re-establish the route.
+
+---
 
 ## Live Preview & Frontend Endpoints
 
