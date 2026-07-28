@@ -21,7 +21,16 @@ import random
 import uuid
 import hashlib
 import math
+import sys
+import os
 from datetime import datetime, timedelta, timezone
+
+# Allow importing sibling Stage 7 module
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+
+from governance_orchestrator_stage import generate_governance_orchestrator
 
 SEED = 42
 random.seed(SEED)
@@ -1232,10 +1241,21 @@ def main():
     print(f"       Conflicts: {conflicts['total_detected']} detected, {conflicts['total_resolved']} resolved")
     print(f"       Audit chain: {audit_chain['total_entries']} entries, integrity={audit_chain['chain_integrity']}")
 
+    # Stage 7: HIPAA Governance Orchestrator (22 components)
+    print("[Stage 7] Generating 22-component HIPAA governance orchestrator...")
+    governance_orchestrator = generate_governance_orchestrator()
+    gov_stats = governance_orchestrator["statistics"]
+    print(f"       Components exercised: {gov_stats['totalComponents']}/22")
+    print(f"       Total events: {gov_stats['totalEvents']}")
+    print(f"       Audit trail: {gov_stats['auditTrailEntries']} entries (hash-linked)")
+    print(f"       Escalations: {gov_stats['escalationsRaised']} raised, {gov_stats['escalationsResolved']} resolved")
+    print(f"       Breach alerts: {gov_stats['breachAlerts']} | Provenance steps: {gov_stats['provenanceSteps']}")
+    print(f"       Synthetic patients: {gov_stats['syntheticPatientsGenerated']} | DR snapshots: {gov_stats['drSnapshots']}")
+
     output = {
         "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
         "generator": "autonomous-compliance-agent-swarm",
-        "version": "4.0.0",
+        "version": "5.0.0",
         "project": "Autonomous Regulatory Compliance Agent Swarm",
         "specification": "Technical Specification v1.0 (July 2026)",
         "architecture": {
@@ -1260,6 +1280,7 @@ def main():
             "eventBus": event_bus,
             "conflicts": conflicts,
             "auditChain": audit_chain,
+            "governanceOrchestrator": governance_orchestrator,
         },
         "statistics": {
             "totalScenarios": len(traces),
@@ -1283,6 +1304,16 @@ def main():
             "conflictsResolved": conflicts["total_resolved"],
             "auditChainEntries": audit_chain["total_entries"],
             "auditChainIntact": audit_chain["chain_integrity"] == "intact",
+            # Stage 7: Governance Orchestrator
+            "governanceComponents": gov_stats["totalComponents"],
+            "governanceEvents": gov_stats["totalEvents"],
+            "governanceAuditEntries": gov_stats["auditTrailEntries"],
+            "governanceEscalations": gov_stats["escalationsRaised"],
+            "governanceBreachAlerts": gov_stats["breachAlerts"],
+            "governanceProvenanceSteps": gov_stats["provenanceSteps"],
+            "governanceSyntheticPatients": gov_stats["syntheticPatientsGenerated"],
+            "governanceDrSnapshots": gov_stats["drSnapshots"],
+            "governanceRiskPosture": gov_stats["complianceRiskPosture"],
         }
     }
 

@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
   ShieldCheck, Database, Layers, Scale, Gavel, Network, GitBranch,
-  Radio, Link2, Workflow,
+  Radio, Link2, Workflow, Boxes,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -23,6 +23,7 @@ import { StateMachinePanel } from '@/components/dashboard/state-machine-panel'
 import { ConflictsPanel } from '@/components/dashboard/conflicts-panel'
 import { OrchestrationPanel } from '@/components/dashboard/orchestration-panel'
 import { ProvenancePanel } from '@/components/dashboard/provenance-panel'
+import { GovernanceOrchestratorPanel } from '@/components/dashboard/governance-orchestrator-panel'
 
 interface ObservabilityData {
   generatedAt: string
@@ -49,6 +50,26 @@ interface ObservabilityData {
     frameworks: number
     regulationsMonitored: number
     agents: number
+    // Orchestration (Stage 6)
+    conflictsDetected?: number
+    conflictsResolved?: number
+    eventBusTopics?: number
+    eventBusMessages?: number
+    auditChainEntries?: number
+    auditChainIntact?: boolean
+    stateEntities?: number
+    stateTransitions?: number
+    // Governance Orchestrator (Stage 7)
+    governanceComponents?: number
+    governanceEvents?: number
+    governanceAuditEntries?: number
+    governanceEscalations?: number
+    governanceBreachAlerts?: number
+    governanceProvenanceSteps?: number
+    governanceSyntheticPatients?: number
+    governanceDrSnapshots?: number
+    governanceRiskPosture?: string
+    [key: string]: any
   }
   data: {
     traces: any[]
@@ -62,6 +83,7 @@ interface ObservabilityData {
     eventBus: any
     conflicts: any
     auditChain: any
+    governanceOrchestrator: any
   }
 }
 
@@ -124,6 +146,10 @@ export default function Home() {
             <Badge variant="outline" className="text-xs hidden lg:inline-flex">
               <Radio className="h-3 w-3 mr-1" />
               {data.statistics.eventBusTopics} topics
+            </Badge>
+            <Badge variant="outline" className="text-xs hidden lg:inline-flex">
+              <Boxes className="h-3 w-3 mr-1" />
+              {data.statistics.governanceComponents} governance
             </Badge>
             {data.statistics.firingAlerts > 0 && (
               <Badge variant="destructive" className="text-xs animate-pulse">
@@ -199,6 +225,10 @@ export default function Home() {
               <Link2 className="h-3.5 w-3.5" />
               Audit Chain
             </TabsTrigger>
+            <TabsTrigger value="governance" className="text-xs gap-1.5">
+              <Boxes className="h-3.5 w-3.5" />
+              Governance Orchestrator
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -259,7 +289,7 @@ export default function Home() {
             </div>
 
             {/* KPI Cards */}
-            <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary} />
+            <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary as any} />
 
             {/* API Endpoints */}
             <Card>
@@ -285,6 +315,7 @@ export default function Home() {
                     { method: 'GET', path: '/api/observability/orchestration', desc: 'Event bus + conflicts (SKILLS §5)', color: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
                     { method: 'GET', path: '/api/observability/conflicts', desc: 'Regulatory conflict resolution', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
                     { method: 'GET', path: '/api/observability/audit-chain', desc: 'Immutable append-only audit chain', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+                    { method: 'GET', path: '/api/observability/governance-orchestrator', desc: '22-component HIPAA governance orchestrator (Stage 7)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
                   ].map((ep) => (
                     <div key={ep.path} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
@@ -350,6 +381,10 @@ export default function Home() {
 
           <TabsContent value="provenance">
             <ProvenancePanel data={data.data.auditChain} />
+          </TabsContent>
+
+          <TabsContent value="governance">
+            <GovernanceOrchestratorPanel data={data.data.governanceOrchestrator} />
           </TabsContent>
         </Tabs>
       </main>
