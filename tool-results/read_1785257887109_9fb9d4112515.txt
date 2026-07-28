@@ -1,0 +1,1301 @@
+     1→#!/usr/bin/env python3
+     2→"""
+     3→Autonomous Regulatory Compliance Agent Swarm — Observability Generator
+     4→======================================================================
+     5→Implements observability for the 4-agent swarm architecture defined in
+     6→the Technical Specification (PDF) and SKILLS.md:
+     7→
+     8→  Agent 1: Ingestion & Schema Agent        (deterministic parser)
+     9→  Agent 2: Legal Analyst Agent             (rules engine — imperatives)
+    10→  Agent 3: Prosecutor Agent                (adversarial evaluator)
+    11→  Agent 4: Defender Agent                  (remediation engineer)
+    12→
+    13→Stages follow Section 7 of the spec: Push Update → Parse → Imperative
+    14→Extraction → Adversarial Audit → Remediation Engineering → Human-in-Loop.
+    15→
+    16→Output: /home/z/my-project/download/observability-data.json
+    17→"""
+    18→
+    19→import json
+    20→import random
+    21→import uuid
+    22→import hashlib
+    23→import math
+    24→from datetime import datetime, timedelta, timezone
+    25→
+    26→SEED = 42
+    27→random.seed(SEED)
+    28→OUTPUT_PATH = "/home/z/my-project/download/observability-data.json"
+    29→NOW = datetime.now(timezone.utc)
+    30→
+    31→
+    32→def ts(minutes_ago=0, seconds_offset=0):
+    33→    dt = NOW - timedelta(minutes=minutes_ago, seconds=seconds_offset)
+    34→    return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
+    35→
+    36→
+    37→def rand_latency(lo=5, hi=500):
+    38→    return max(lo, min(hi, int(random.lognormvariate(math.log(50), 1.0))))
+    39→
+    40→
+    41→def rand_choice(options, weights=None):
+    42→    return random.choices(options, weights=weights or [1]*len(options), k=1)[0]
+    43→
+    44→
+    45→def hash_id(*parts):
+    46→    raw = ":".join(str(p) for p in parts)
+    47→    return hashlib.sha256(raw.encode()).hexdigest()[:12].upper()
+    48→
+    49→
+    50→# ══════════════════════════════════════════════════════════════════════════════
+    51→# Domain Data — matches PDF §3.2 (Agent 1 schema), §4.1 (mapping), §7.1 (HIPAA)
+    52→# ══════════════════════════════════════════════════════════════════════════════
+    53→
+    54→REGULATORY_SOURCES = [
+    55→    {"id": "FR-2026-14872", "name": "HIPAA Access Log Retention Amendment",
+    56→     "jurisdiction": "HIPAA", "agency": "HHS", "tier": "Critical",
+    57→     "effective_date": "2026-09-01", "raw_pages": 52,
+    58→     "cleaned_tokens": 4120, "raw_tokens": 18430,
+    59→     "url": "https://federalregister.gov/d/2026-14872"},
+    60→    {"id": "FR-2026-14903", "name": "GDPR Article 25 — Data Protection by Design Update",
+    61→     "jurisdiction": "GDPR", "agency": "EDPB", "tier": "High",
+    62→     "effective_date": "2026-08-15", "raw_pages": 38,
+    63→     "cleaned_tokens": 3180, "raw_tokens": 14250,
+    64→     "url": "https://eur-lex.europa.eu/2026/14903"},
+    65→    {"id": "FR-2026-14944", "name": "SOC 2 — Type II Encryption-at-Rest Requirement",
+    66→     "jurisdiction": "SOC2", "agency": "AICPA", "tier": "High",
+    67→     "effective_date": "2026-10-01", "raw_pages": 24,
+    68→     "cleaned_tokens": 2040, "raw_tokens": 9180,
+    69→     "url": "https://aicpa.org/2026/14944"},
+    70→    {"id": "FR-2026-14988", "name": "PCI-DSS v4.1 — MFA Scope Expansion",
+    71→     "jurisdiction": "PCI-DSS", "agency": "PCI-SSC", "tier": "Critical",
+    72→     "effective_date": "2026-07-30", "raw_pages": 67,
+    73→     "cleaned_tokens": 5890, "raw_tokens": 28140,
+    74→     "url": "https://pcisecuritystandards.org/2026/14988"},
+    75→    {"id": "FR-2026-15019", "name": "EU AI Act — High-Risk System Audit Logging",
+    76→     "jurisdiction": "EU-AI-ACT", "agency": "EU-Commission", "tier": "Critical",
+    77→     "effective_date": "2026-08-27", "raw_pages": 89,
+    78→     "cleaned_tokens": 7820, "raw_tokens": 37640,
+    79→     "url": "https://eur-lex.europa.eu/2026/15019"},
+    80→    {"id": "FR-2026-15052", "name": "ISO 27001:2026 — Annex A Control Update",
+    81→     "jurisdiction": "ISO27001", "agency": "ISO", "tier": "Moderate",
+    82→     "effective_date": "2026-11-01", "raw_pages": 31,
+    83→     "cleaned_tokens": 2680, "raw_tokens": 12090,
+    84→     "url": "https://iso.org/2026/15052"},
+    85→    {"id": "FR-2026-15088", "name": "SEC Cybersecurity Disclosure Rule Amendment",
+    86→     "jurisdiction": "SEC", "agency": "SEC", "tier": "High",
+    87→     "effective_date": "2026-09-15", "raw_pages": 19,
+    88→     "cleaned_tokens": 1620, "raw_tokens": 7820,
+    89→     "url": "https://sec.gov/2026/15088"},
+    90→]
+    91→
+    92→# Imperative templates per jurisdiction (matches PDF §4.1 mapping examples)
+    93→IMPERATIVE_TEMPLATES = {
+    94→    "HIPAA": [
+    95→        {"text": "Maintain access logs for a minimum of 365 days",
+    96→         "query": 'query_db_metadata(table="Access_Logs", filter="retention_period < 365d", action="count")',
+    97→         "risk_tier": "Critical"},
+    98→        {"text": "Encrypt all PHI at rest using AES-256",
+    99→         "query": 'scan_storage_config(attribute="encryption_standard", expected="AES-256")',
+   100→         "risk_tier": "Critical"},
+   101→        {"text": "Administrative access requires Multi-Factor Authentication",
+   102→         "query": 'check_iam_policy(role="admin", requirement="mfa_enabled")',
+   103→         "risk_tier": "High"},
+   104→        {"text": "Conduct annual HIPAA security risk assessment",
+   105→         "query": 'check_audit_records(control="HIPAA-SRA", cadence="annual")',
+   106→         "risk_tier": "Moderate"},
+   107→    ],
+   108→    "GDPR": [
+   109→        {"text": "Implement data protection by design and by default",
+   110→         "query": 'scan_dpia_records(status="completed", scope="all-systems")',
+   111→         "risk_tier": "High"},
+   112→        {"text": "Honor data subject erasure requests within 30 days",
+   113→         "query": 'query_ticket_sla(category="DSAR-erasure", max_days=30)',
+   114→         "risk_tier": "High"},
+   115→        {"text": "Maintain records of processing activities (ROPA)",
+   116→         "query": 'check_ropa_inventory(completeness="all-systems")',
+   117→         "risk_tier": "Moderate"},
+   118→        {"text": "Cross-border data transfer requires SCC or adequacy decision",
+   119→         "query": 'check_transfer_agreements(dest="non-EEA", agreement_type="SCC")',
+   120→         "risk_tier": "High"},
+   121→    ],
+   122→    "SOC2": [
+   123→        {"text": "All data at rest must be encrypted with industry-standard algorithms",
+   124→         "query": 'scan_storage_config(attribute="encryption_standard", expected="AES-256")',
+   125→         "risk_tier": "High"},
+   126→        {"text": "Access reviews must be performed quarterly",
+   127→         "query": 'check_access_review_records(cadence="quarterly")',
+   128→         "risk_tier": "Moderate"},
+   129→        {"text": "Change management requires documented approval workflows",
+   130→         "query": 'check_change_tickets(approval_workflow="documented")',
+   131→         "risk_tier": "Moderate"},
+   132→    ],
+   133→    "PCI-DSS": [
+   134→        {"text": "Multi-factor authentication required for all access into CDE",
+   135→         "query": 'check_iam_policy(scope="CDE", requirement="mfa_enabled")',
+   136→         "risk_tier": "Critical"},
+   137→        {"text": "Cardholder data retention limited to business need",
+   138→         "query": 'query_db_metadata(table="CHD", filter="age > business_need", action="flag")',
+   139→         "risk_tier": "High"},
+   140→        {"text": "Network segmentation between CDE and corporate networks",
+   141→         "query": 'scan_network_segmentation(scope="CDE", isolation="enforced")',
+   142→         "risk_tier": "Critical"},
+   143→        {"text": "Quarterly vulnerability scans required",
+   144→         "query": 'check_scan_records(control="vuln-scan", cadence="quarterly")',
+   145→         "risk_tier": "High"},
+   146→    ],
+   147→    "EU-AI-ACT": [
+   148→        {"text": "High-risk AI systems must maintain automated audit logs for 5 years",
+   149→         "query": 'query_db_metadata(table="AI_Audit_Logs", filter="retention < 1825d", action="count")',
+   150→         "risk_tier": "Critical"},
+   151→        {"text": "Human oversight mandatory for high-risk AI decisions",
+   152→         "query": 'check_ai_systems(risk_tier="high", oversight="human-in-loop")',
+   153→         "risk_tier": "High"},
+   154→        {"text": "Bias testing required before deployment and quarterly thereafter",
+   155→         "query": 'check_bias_test_records(cadence="quarterly")',
+   156→         "risk_tier": "High"},
+   157→    ],
+   158→    "ISO27001": [
+   159→        {"text": "Information security policy reviewed at planned intervals",
+   160→         "query": 'check_policy_review_records(cadence="annual")',
+   161→         "risk_tier": "Moderate"},
+   162→        {"text": "Asset inventory maintained with assigned ownership",
+   163→         "query": 'check_asset_inventory(ownership="assigned", completeness="100%")',
+   164→         "risk_tier": "Moderate"},
+   165→    ],
+   166→    "SEC": [
+   167→        {"text": "Material cybersecurity incidents disclosed within 4 business days",
+   168→         "query": 'check_disclosure_sla(incident_type="material-cyber", max_days=4)',
+   169→         "risk_tier": "Critical"},
+   170→        {"text": "Risk management strategy documented and reviewed annually",
+   171→         "query": 'check_risk_strategy_review(cadence="annual")',
+   172→         "risk_tier": "High"},
+   173→    ],
+   174→}
+   175→
+   176→# ══════════════════════════════════════════════════════════════════════════════
+   177→# Stage 1: Distributed Traces — 4-Agent Pipeline Spans
+   178→# ══════════════════════════════════════════════════════════════════════════════
+   179→
+   180→AGENTS = [
+   181→    {"name": "Ingestion_Agent", "role": "Deterministic Parser",
+   182→     "operations": ["PollFederalRegister", "ParsePDF", "StripBoilerplate", "ValidateSchema", "PublishToEventBus"]},
+   183→    {"name": "Legal_Analyst_Agent", "role": "Rules Engine",
+   184→     "operations": ["ExtractNormativeStatements", "FormalizeImperative", "AssignImperativeId",
+   185→                    "GenerateSystemQuery", "CrossReferenceResolution", "RiskCategorize"]},
+   186→    {"name": "Prosecutor_Agent", "role": "Adversarial Evaluator",
+   187→     "operations": ["Phase1_VectorSearch", "Phase1_PolicyConflict", "Phase2_ExecuteSQLQuery",
+   188→                    "Phase2_VerifyConfig", "GenerateViolationReport", "CalculatePenaltyExposure"]},
+   189→    {"name": "Defender_Agent", "role": "Remediation Engineer",
+   190→     "operations": ["MapViolationToImperative", "GenerateRemediationPlan",
+   191→                    "DraftPolicyUpdate", "CreateEngineeringTicket", "BuildExecutiveDashboard",
+   192→                    "RouteForHumanApproval"]},
+   193→]
+   194→
+   195→
+   196→def generate_swarm_traces(num_scenarios=20):
+   197→    """Each scenario = 1 push update flowing through the 4-agent pipeline."""
+   198→    traces = []
+   199→    for i in range(num_scenarios):
+   200→        scenario_id = f"SCN-{uuid.uuid4().hex[:8].upper()}"
+   201→        trace_id = uuid.uuid4().hex
+   202→        source = rand_choice(REGULATORY_SOURCES)
+   203→        started_at = ts(minutes_ago=random.randint(0, 60))
+   204→        root_span_id = uuid.uuid4().hex[:16]
+   205→
+   206→        # Root span: Trigger detection
+   207→        spans = [{
+   208→            "spanId": root_span_id,
+   209→            "traceId": trace_id,
+   210→            "parentSpanId": None,
+   211→            "agent": "Ingestion_Agent",
+   212→            "operation": "PollFederalRegister",
+   213→            "startTime": started_at,
+   214→            "durationMs": rand_latency(50, 400),
+   215→            "status": "ok",
+   216→            "tags": {
+   217→                "regulation.id": source["id"],
+   218→                "regulation.name": source["name"],
+   219→                "regulation.jurisdiction": source["jurisdiction"],
+   220→                "regulation.tier": source["tier"],
+   221→                "scenario.id": scenario_id,
+   222→            },
+   223→            "events": [
+   224→                {"name": "RSS trigger", "ts": started_at, "attr": {"source": source["url"]}},
+   225→            ]
+   226→        }]
+   227→
+   228→        # Agent 1: Ingestion chain
+   229→        prev_span = root_span_id
+   230→        for op in ["ParsePDF", "StripBoilerplate", "ValidateSchema", "PublishToEventBus"]:
+   231→            span_id = uuid.uuid4().hex[:16]
+   232→            spans.append({
+   233→                "spanId": span_id,
+   234→                "traceId": trace_id,
+   235→                "parentSpanId": prev_span,
+   236→                "agent": "Ingestion_Agent",
+   237→                "operation": op,
+   238→                "startTime": ts(minutes_ago=random.randint(0, 59), seconds_offset=random.randint(0, 30)),
+   239→                "durationMs": rand_latency(5, 250),
+   240→                "status": rand_choice(["ok", "ok", "ok", "ok", "error"]),
+   241→                "tags": {
+   242→                    "regulation.id": source["id"],
+   243→                    "scenario.id": scenario_id,
+   244→                    "agent.role": "Deterministic Parser",
+   245→                    **({"token.saved_pct": round(100 - (source["cleaned_tokens"]/source["raw_tokens"])*100, 1)} if op == "StripBoilerplate" else {}),
+   246→                    **({"schema.valid": "true", "agent1.output.effective_date": source["effective_date"],
+   247→                        "agent1.output.penalty_tier": source["tier"],
+   248→                        "agent1.output.jurisdiction": source["jurisdiction"]} if op == "ValidateSchema" else {}),
+   249→                },
+   250→                "events": []
+   251→            })
+   252→            prev_span = span_id
+   253→
+   254→        # Agent 2: Legal Analyst — extract 1-3 imperatives
+   255→        num_imperatives = random.randint(1, 3)
+   256→        imperative_ids = []
+   257→        for j in range(num_imperatives):
+   258→            template = rand_choice(IMPERATIVE_TEMPLATES.get(source["jurisdiction"], [{"text": "General compliance required", "query": "scan_compliance()", "risk_tier": "Moderate"}]))
+   259→            imp_id = f"IMP-{random.randint(1000,9999)}"
+   260→            imperative_ids.append({
+   261→                "id": imp_id,
+   262→                "text": template["text"],
+   263→                "query": template["query"],
+   264→                "risk_tier": template["risk_tier"],
+   265→                "jurisdiction": source["jurisdiction"],
+   266→                "regulation_id": source["id"],
+   267→                "scenario_id": scenario_id,
+   268→                "trace_id": trace_id,
+   269→                "extracted_at": ts(minutes_ago=random.randint(0, 55)),
+   270→            })
+   271→            for op in ["FormalizeImperative", "AssignImperativeId", "GenerateSystemQuery"]:
+   272→                span_id = uuid.uuid4().hex[:16]
+   273→                spans.append({
+   274→                    "spanId": span_id,
+   275→                    "traceId": trace_id,
+   276→                    "parentSpanId": prev_span,
+   277→                    "agent": "Legal_Analyst_Agent",
+   278→                    "operation": op,
+   279→                    "startTime": ts(minutes_ago=random.randint(0, 55), seconds_offset=random.randint(0, 30)),
+   280→                    "durationMs": rand_latency(20, 350),
+   281→                    "status": "ok",
+   282→                    "tags": {
+   283→                        "imperative.id": imp_id,
+   284→                        "imperative.risk_tier": template["risk_tier"],
+   285→                        "scenario.id": scenario_id,
+   286→                        "agent.role": "Rules Engine",
+   287→                    },
+   288→                    "events": []
+   289→                })
+   290→                prev_span = span_id
+   291→
+   292→        # Agent 3: Prosecutor — adversarial audit (Phase I + Phase II)
+   293→        has_violation = random.random() < 0.55  # 55% violation rate (adversarial stance)
+   294→        for op in ["Phase1_VectorSearch", "Phase1_PolicyConflict", "Phase2_ExecuteSQLQuery",
+   295→                    "Phase2_VerifyConfig", "GenerateViolationReport", "CalculatePenaltyExposure"]:
+   296→            span_id = uuid.uuid4().hex[:16]
+   297→            status = "error" if op in ["Phase2_ExecuteSQLQuery", "Phase2_VerifyConfig"] and has_violation else "ok"
+   298→            spans.append({
+   299→                "spanId": span_id,
+   300→                "traceId": trace_id,
+   301→                "parentSpanId": prev_span,
+   302→                "agent": "Prosecutor_Agent",
+   303→                "operation": op,
+   304→                "startTime": ts(minutes_ago=random.randint(0, 54), seconds_offset=random.randint(0, 30)),
+   305→                "durationMs": rand_latency(30, 500),
+   306→                "status": status,
+   307→                "tags": {
+   308→                    "audit.phase": "I" if "Phase1" in op else "II",
+   309→                    "audit.adversarial": "true",
+   310→                    "scenario.id": scenario_id,
+   311→                    "violation.detected": "true" if has_violation else "false",
+   312→                    "agent.role": "Adversarial Evaluator",
+   313→                    **({"imperative.ids": ",".join([i["id"] for i in imperative_ids])} if imperative_ids else {}),
+   314→                },
+   315→                "events": [
+   316→                    {"name": "adversarial_prompt", "ts": ts(minutes_ago=random.randint(0, 50)),
+   317→                     "attr": {"prompt": "Assume non-compliance. Prove violation."}}
+   318→                ] if "Phase1" in op else []
+   319→            })
+   320→            prev_span = span_id
+   321→
+   322→        # Agent 4: Defender — remediation engineering (only if violation)
+   323→        artifacts_generated = []
+   324→        if has_violation:
+   325→            for op in ["MapViolationToImperative", "GenerateRemediationPlan",
+   326→                       "DraftPolicyUpdate", "CreateEngineeringTicket", "BuildExecutiveDashboard",
+   327→                       "RouteForHumanApproval"]:
+   328→                span_id = uuid.uuid4().hex[:16]
+   329→                if op == "CreateEngineeringTicket":
+   330→                    artifacts_generated.append({
+   331→                        "type": "Engineering Ticket",
+   332→                        "id": f"JIRA-{random.randint(10000,99999)}",
+   333→                        "target_audience": "Development",
+   334→                        "imperative_id": imperative_ids[0]["id"] if imperative_ids else None,
+   335→                    })
+   336→                elif op == "DraftPolicyUpdate":
+   337→                    artifacts_generated.append({
+   338→                        "type": "Updated Policy",
+   339→                        "id": f"POL-REV-{random.randint(1000,9999)}",
+   340→                        "target_audience": "HR / Legal",
+   341→                        "imperative_id": imperative_ids[0]["id"] if imperative_ids else None,
+   342→                    })
+   343→                elif op == "GenerateRemediationPlan":
+   344→                    artifacts_generated.append({
+   345→                        "type": "Remediation Instructions",
+   346→                        "id": f"REM-{random.randint(1000,9999)}",
+   347→                        "target_audience": "IT / Engineering",
+   348→                        "imperative_id": imperative_ids[0]["id"] if imperative_ids else None,
+   349→                    })
+   350→                spans.append({
+   351→                    "spanId": span_id,
+   352→                    "traceId": trace_id,
+   353→                    "parentSpanId": prev_span,
+   354→                    "agent": "Defender_Agent",
+   355→                    "operation": op,
+   356→                    "startTime": ts(minutes_ago=random.randint(0, 50), seconds_offset=random.randint(0, 30)),
+   357→                    "durationMs": rand_latency(50, 600),
+   358→                    "status": "ok",
+   359→                    "tags": {
+   360→                        "scenario.id": scenario_id,
+   361→                        "agent.role": "Remediation Engineer",
+   362→                        "imperative.linked": "true",
+   363→                        "traceability.enforced": "true",
+   364→                    },
+   365→                    "events": []
+   366→                })
+   367→                prev_span = span_id
+   368→
+   369→        trace_status = "error" if has_violation else "ok"
+   370→        traces.append({
+   371→            "traceId": trace_id,
+   372→            "scenarioId": scenario_id,
+   373→            "scenarioName": source["name"],
+   374→            "regulation": source,
+   375→            "startedAt": started_at,
+   376→            "durationMs": sum(s["durationMs"] for s in spans),
+   377→            "status": trace_status,
+   378→            "spanCount": len(spans),
+   379→            "imperatives": imperative_ids,
+   380→            "violationDetected": has_violation,
+   381→            "artifactsGenerated": artifacts_generated,
+   382→            "spans": spans,
+   383→        })
+   384→
+   385→    return traces
+   386→
+   387→
+   388→# ══════════════════════════════════════════════════════════════════════════════
+   389→# Stage 2: Compliance Metrics — Swarm-specific KPIs
+   390→# ══════════════════════════════════════════════════════════════════════════════
+   391→
+   392→def generate_metrics(num_points=60):
+   393→    points = {k: [] for k in [
+   394→        "ingestion_throughput", "imperative_extraction_rate", "violation_detection_rate",
+   395→        "remediation_completion_rate", "boilerplate_reduction_pct", "compliance_posture_score",
+   396→        "adversarial_audit_pass_rate", "human_approval_latency_hr", "token_cost_saved_usd",
+   397→    ]}
+   398→
+   399→    base = {
+   400→        "ingestion_throughput": 14,           # regulations ingested/hour
+   401→        "imperative_extraction_rate": 38,     # imperatives/hour
+   402→        "violation_detection_rate": 4.2,      # violations/hour
+   403→        "remediation_completion_rate": 92.3,  # % of violations remediated within SLA
+   404→        "boilerplate_reduction_pct": 73.5,    # PDF claim: 60-80%
+   405→        "compliance_posture_score": 87.4,     # overall org posture (0-100)
+   406→        "adversarial_audit_pass_rate": 44.8,  # % of audits that detect violations (adversarial stance)
+   407→        "human_approval_latency_hr": 2.4,     # avg hours from detection to human approval
+   408→        "token_cost_saved_usd": 127.80,       # $ saved per hour from boilerplate stripping
+   409→    }
+   410→
+   411→    for i in range(num_points):
+   412→        t = ts(minutes_ago=(num_points - i))
+   413→        time_factor = math.sin(i / num_points * 2 * math.pi) * 5
+   414→        burst = 8 if 18 <= i <= 23 else 0  # regulatory publication burst
+   415→
+   416→        for k, b in base.items():
+   417→            noise = random.gauss(0, b * 0.03)
+   418→            if k == "compliance_posture_score":
+   419→                v = round(max(45, min(100, b - i * 0.04 + time_factor * 0.2 - burst * 0.4 + noise)), 1)
+   420→            elif k == "remediation_completion_rate":
+   421→                v = round(max(50, min(100, b + time_factor * 0.5 - burst * 2 + noise)), 1)
+   422→            elif k == "boilerplate_reduction_pct":
+   423→                v = round(max(50, min(85, b + noise)), 1)
+   424→            elif k == "token_cost_saved_usd":
+   425→                v = round(max(0, b * (1 + burst * 0.15) + noise), 2)
+   426→            elif k == "human_approval_latency_hr":
+   427→                v = round(max(0.2, b + burst * 0.3 + noise), 2)
+   428→            elif "rate" in k and "pass" not in k and "completion" not in k:
+   429→                v = round(max(0.1, b + burst + noise), 2)
+   430→            elif k == "adversarial_audit_pass_rate":
+   431→                v = round(max(20, min(80, b + time_factor * 0.4 + noise)), 1)
+   432→            else:
+   433→                v = round(max(0.1, b + burst + noise), 2)
+   434→            points[k].append({"timestamp": t, "value": v})
+   435→
+   436→    metric_meta = {
+   437→        "ingestion_throughput": ("regulations/hour", "Agent 1 — Federal Register polling throughput"),
+   438→        "imperative_extraction_rate": ("imperatives/hour", "Agent 2 — Imperative extraction throughput"),
+   439→        "violation_detection_rate": ("violations/hour", "Agent 3 — Violation detection rate"),
+   440→        "remediation_completion_rate": ("%", "Agent 4 — Remediation SLA completion"),
+   441→        "boilerplate_reduction_pct": ("%", "Agent 1 — Boilerplate token reduction (PDF §3.1)"),
+   442→        "compliance_posture_score": ("score", "Aggregate org compliance posture (0-100)"),
+   443→        "adversarial_audit_pass_rate": ("%", "Agent 3 — Adversarial audit violation detection rate"),
+   444→        "human_approval_latency_hr": ("hours", "Avg detection → human approval latency"),
+   445→        "token_cost_saved_usd": ("$/hour", "LLM token cost saved by boilerplate stripping"),
+   446→    }
+   447→
+   448→    return {
+   449→        "system": {
+   450→            k: {"unit": u, "description": d, "data": points[k], "owner_agent": owner}
+   451→            for k, (u, d) in metric_meta.items()
+   452→            for owner in [(
+   453→                "Ingestion_Agent" if "ingestion" in k or "boilerplate" in k or "token" in k else
+   454→                "Legal_Analyst_Agent" if "imperative" in k else
+   455→                "Prosecutor_Agent" if "violation" in k or "adversarial" in k else
+   456→                "Defender_Agent" if "remediation" in k else
+   457→                "Orchestrator"
+   458→            )]
+   459→        },
+   460→        "summary": {
+   461→            "current_compliance_posture": points["compliance_posture_score"][-1]["value"],
+   462→            "current_violation_rate": points["violation_detection_rate"][-1]["value"],
+   463→            "current_remediation_rate": points["remediation_completion_rate"][-1]["value"],
+   464→            "current_boilerplate_reduction": points["boilerplate_reduction_pct"][-1]["value"],
+   465→            "current_token_savings": points["token_cost_saved_usd"][-1]["value"],
+   466→            "current_audit_pass_rate": points["adversarial_audit_pass_rate"][-1]["value"],
+   467→            "current_ingestion_rate": points["ingestion_throughput"][-1]["value"],
+   468→            "current_imperative_rate": points["imperative_extraction_rate"][-1]["value"],
+   469→            "current_approval_latency": points["human_approval_latency_hr"][-1]["value"],
+   470→            "peak_violation_rate": max(p["value"] for p in points["violation_detection_rate"]),
+   471→            "min_posture_score": min(p["value"] for p in points["compliance_posture_score"]),
+   472→            "avg_token_savings": round(sum(p["value"] for p in points["token_cost_saved_usd"]) / num_points, 2),
+   473→        }
+   474→    }
+   475→
+   476→
+   477→# ══════════════════════════════════════════════════════════════════════════════
+   478→# Stage 3: Audit Logs — Swarm Agent Activity
+   479→# ══════════════════════════════════════════════════════════════════════════════
+   480→
+   481→LOG_LEVELS = ["DEBUG", "INFO", "INFO", "INFO", "INFO", "WARN", "WARN", "ERROR", "ERROR", "FATAL"]
+   482→
+   483→LOG_MESSAGES = {
+   484→    "DEBUG": [
+   485→        "Agent 1 polled {source} (HTTP {status_code}, {elapsed_ms}ms) — no new publications",
+   486→        "Boilerplate stripper removed {tokens_removed} tokens from {regulation_id} ({reduction_pct}% reduction)",
+   487→        "Schema validation passed for {regulation_id}: effective_date={effective_date}, tier={tier}",
+   488→        "Event published to topic {topic} (partition {partition}, offset {offset})",
+   489→        "Agent 2 retrieved imperative {imperative_id} from cache (hit ratio {hit_pct}%)",
+   490→    ],
+   491→    "INFO": [
+   492→        "Agent 1 detected new regulation: {regulation_name} ({jurisdiction}) — triggering pipeline",
+   493→        "Agent 2 extracted imperative {imperative_id}: \"{imperative_text}\" (risk tier: {risk_tier})",
+   494→        "Agent 2 generated system query for {imperative_id}: {system_query}",
+   495→        "Agent 3 Phase I vector search completed — {policies_scanned} policies scanned, {conflicts_found} conflicts",
+   496→        "Agent 3 Phase II SQL execution completed — violation {violation_id} detected: {violation_desc}",
+   497→        "Agent 4 generated {artifact_type} for violation {violation_id} (imperative: {imperative_id})",
+   498→        "Agent 4 routed remediation package {package_id} for human approval (escalated to {escalated_to})",
+   499→        "Scenario {scenario_id} completed in {elapsed_ms}ms — pipeline status: {pipeline_status}",
+   500→        "Orchestrator: 4-agent pipeline completed for {regulation_id} — {imperatives_count} imperatives, {violations_count} violations",
+   501→        "Audit trail signed and archived: digest={audit_digest}, location={audit_location}",
+   502→    ],
+   503→    "WARN": [
+   504→        "Schema validation warning for {regulation_id}: optional field {field} missing — proceeding",
+   505→        "Agent 2 cross-reference resolution incomplete for {imperative_id} — flagged for review",
+   506→        "Agent 3 Phase I vector similarity below threshold ({similarity_score} < {threshold}) — manual review needed",
+   507→        "Agent 4 traceability check: artifact {artifact_id} cannot fully resolve to imperative — flagged",
+   508→        "High adversarial audit pass rate: {pass_rate}% (last hour) — review prosecutor prompt",
+   509→        "Human approval latency exceeded SLA: {latency_hours}h > {sla_hours}h for violation {violation_id}",
+   510→        "Imperative extraction confidence low: {confidence} for clause in {regulation_id}",
+   511→    ],
+   512→    "ERROR": [
+   513→        "Agent 1 schema validation FAILED for {regulation_id}: missing required field {field} — quarantined",
+   514→        "Agent 2 imperative formalization failed: ambiguous modal verb usage in clause {clause_id}",
+   515→        "Agent 3 Phase II SQL execution error: query failed against {db_target} — {error_msg}",
+   516→        "Agent 4 remediation artifact generation failed: cannot map violation {violation_id} to any imperative (REJECTED)",
+   517→        "Pipeline orchestration failed for scenario {scenario_id} — agent {agent_name} exceeded timeout",
+   518→        "Audit trail integrity check FAILED: hash mismatch for event {event_id} — tampering suspected",
+   519→        "Adversarial audit error: prosecutor could not execute query {system_query} — {error_msg}",
+   520→    ],
+   521→    "FATAL": [
+   522→        "CRITICAL: Pipeline integrity violation — Agent 4 produced artifact without imperative linkage (Section 9.2 violation)",
+   523→        "CRITICAL: Compliance lag detected — regulation {regulation_id} published {lag_hours}h ago, not yet processed",
+   524→        "CRITICAL: Audit trail corruption — append-only store mutation detected for scenario {scenario_id}",
+   525→    ],
+   526→}
+   527→
+   528→
+   529→def generate_logs(num_logs=200):
+   530→    logs = []
+   531→    for i in range(num_logs):
+   532→        level = rand_choice(LOG_LEVELS)
+   533→        agent = rand_choice(AGENTS)["name"]
+   534→        template = rand_choice(LOG_MESSAGES[level])
+   535→        timestamp = ts(minutes_ago=random.randint(0, 60), seconds_offset=random.randint(0, 59))
+   536→
+   537→        regulation = rand_choice(REGULATORY_SOURCES)
+   538→        message = template.format(
+   539→            source=rand_choice(["Federal Register RSS", "EUR-Lex API", "HHS Update Feed", "SEC EDGAR"]),
+   540→            status_code=rand_choice([200, 200, 200, 304, 404, 500]),
+   541→            elapsed_ms=rand_latency(10, 2000),
+   542→            tokens_removed=random.randint(800, 28000),
+   543→            regulation_id=regulation["id"],
+   544→            regulation_name=regulation["name"],
+   545→            jurisdiction=regulation["jurisdiction"],
+   546→            reduction_pct=round(100 - (regulation["cleaned_tokens"]/regulation["raw_tokens"])*100, 1),
+   547→            effective_date=regulation["effective_date"],
+   548→            tier=regulation["tier"],
+   549→            topic=rand_choice(["regulatory.changes", "analysis.results", "gap.findings", "remediation.plans"]),
+   550→            partition=random.randint(0, 2),
+   551→            offset=random.randint(1000, 99999),
+   552→            hit_pct=random.randint(65, 95),
+   553→            imperative_id=f"IMP-{random.randint(1000,9999)}",
+   554→            imperative_text=rand_choice(IMPERATIVE_TEMPLATES[regulation["jurisdiction"]])["text"],
+   555→            risk_tier=rand_choice(["Critical", "High", "Moderate", "Low"]),
+   556→            system_query='scan_storage_config(attribute="encryption_standard", expected="AES-256")',
+   557→            policies_scanned=random.randint(50, 500),
+   558→            conflicts_found=random.randint(0, 5),
+   559→            violation_id=f"VIO-{uuid.uuid4().hex[:8].upper()}",
+   560→            violation_desc=rand_choice(["retention_period below required threshold", "MFA not enabled on admin role",
+   561→                                        "encryption standard non-compliant", "access review overdue by 45 days"]),
+   562→            artifact_type=rand_choice(["Remediation Instructions", "Updated Policy", "Engineering Ticket", "Executive Dashboard"]),
+   563→            package_id=f"PKG-{random.randint(10000,99999)}",
+   564→            escalated_to=rand_choice(["CCO", "CISO", "Legal Counsel", "Engineering Lead"]),
+   565→            scenario_id=f"SCN-{uuid.uuid4().hex[:8].upper()}",
+   566→            pipeline_status=rand_choice(["completed", "completed", "completed", "escalated", "failed"]),
+   567→            imperatives_count=random.randint(1, 8),
+   568→            violations_count=random.randint(0, 4),
+   569→            audit_digest=hashlib.sha256(uuid.uuid4().hex.encode()).hexdigest()[:16],
+   570→            audit_location=f"s3://compliance-audit/{regulation['jurisdiction']}/{ts(0)[:10]}/{uuid.uuid4().hex[:8]}.json",
+   571→            event_id=f"EVT-{uuid.uuid4().hex[:8].upper()}",
+   572→            field=rand_choice(["Effective_Date", "Penalty_Tier", "Jurisdiction", "Raw_Content_Cleaned"]),
+   573→            clause_id=f"CLS-{random.randint(100,999)}",
+   574→            similarity_score=round(random.uniform(0.4, 0.85), 3),
+   575→            threshold=0.75,
+   576→            artifact_id=f"ART-{uuid.uuid4().hex[:8].upper()}",
+   577→            pass_rate=round(random.uniform(55, 78), 1),
+   578→            latency_hours=round(random.uniform(2.5, 8.5), 1),
+   579→            sla_hours=2.0,
+   580→            confidence=round(random.uniform(0.55, 0.85), 2),
+   581→            db_target=rand_choice(["postgres-primary", "iam-policy-store", "config-db"]),
+   582→            error_msg=rand_choice(["connection timeout", "permission denied", "table not found", "query syntax error"]),
+   583→            agent_name=agent,
+   584→            lag_hours=round(random.uniform(1.5, 12), 1),
+   585→        )
+   586→
+   587→        fields = {
+   588→            "agent": agent,
+   589→            "agent_role": next((a["role"] for a in AGENTS if a["name"] == agent), "Unknown"),
+   590→            "traceId": uuid.uuid4().hex[:16],
+   591→            "hostname": f"{agent.lower()}-{random.randint(1,3)}.{rand_choice(['us-east','eu-west','ap-south'])}.compliance.internal",
+   592→            "version": f"v{random.randint(1,3)}.{random.randint(0,8)}.{random.randint(0,40)}",
+   593→            "regulation_id": regulation["id"],
+   594→            "jurisdiction": regulation["jurisdiction"],
+   595→        }
+   596→        if level in ("WARN", "ERROR", "FATAL"):
+   597→            fields["alerting"] = True
+   598→
+   599→        logs.append({
+   600→            "timestamp": timestamp,
+   601→            "level": level,
+   602→            "message": message,
+   603→            "agent": agent,
+   604→            "fields": fields,
+   605→        })
+   606→
+   607→    logs.sort(key=lambda x: x["timestamp"], reverse=True)
+   608→    return logs
+   609→
+   610→
+   611→# ══════════════════════════════════════════════════════════════════════════════
+   612→# Stage 4: Compliance Alerting — Swarm-Specific Rules
+   613→# ══════════════════════════════════════════════════════════════════════════════
+   614→
+   615→def generate_alert_rules():
+   616→    return [
+   617→        {"id": "ALR-001", "name": "ComplianceLagDetected",
+   618→         "description": "Regulation published > 1 hour ago but not yet processed by Agent 1 (PDF §8.1)",
+   619→         "condition": "ingestion_lag_hours > 1 for 5m", "severity": "critical",
+   620→         "agent": "Ingestion_Agent", "channel": "#compliance-critical",
+   621→         "runbook": "https://wiki/runbooks/compliance-lag"},
+   622→        {"id": "ALR-002", "name": "ImperativeExtractionFailure",
+   623→         "description": "Agent 2 failed to formalize imperative from normative clause",
+   624→         "condition": "extraction_failures > 0 for 10m", "severity": "high",
+   625→         "agent": "Legal_Analyst_Agent", "channel": "#compliance-high",
+   626→         "runbook": "https://wiki/runbooks/imperative-extraction"},
+   627→        {"id": "ALR-003", "name": "AdversarialAuditViolationSurge",
+   628→         "description": "Agent 3 detecting > 10 violations/hour — review prosecutor prompt tuning",
+   629→         "condition": "violation_detection_rate > 10 for 15m", "severity": "high",
+   630→         "agent": "Prosecutor_Agent", "channel": "#compliance-high",
+   631→         "runbook": "https://wiki/runbooks/adversarial-surge"},
+   632→        {"id": "ALR-004", "name": "TraceabilityViolation",
+   633→         "description": "Agent 4 produced artifact without imperative linkage (PDF §9.2 violation)",
+   634→         "condition": "unlinked_artifacts > 0", "severity": "critical",
+   635→         "agent": "Defender_Agent", "channel": "#compliance-critical",
+   636→         "runbook": "https://wiki/runbooks/traceability-violation"},
+   637→        {"id": "ALR-005", "name": "AuditTrailTampering",
+   638→         "description": "Append-only audit store mutation detected — integrity compromised",
+   639→         "condition": "audit_hash_mismatches > 0", "severity": "critical",
+   640→         "agent": "Orchestrator", "channel": "#incidents-critical",
+   641→         "runbook": "https://wiki/runbooks/audit-tampering"},
+   642→        {"id": "ALR-006", "name": "HumanApprovalLatencyExceeded",
+   643→         "description": "CCO approval latency exceeded 2-hour SLA (PDF §7.1 Step 6)",
+   644→         "condition": "human_approval_latency_hr > 2 for 1h", "severity": "medium",
+   645→         "agent": "Defender_Agent", "channel": "#compliance-medium",
+   646→         "runbook": "https://wiki/runbooks/approval-latency"},
+   647→        {"id": "ALR-007", "name": "CompliancePostureDrop",
+   648→         "description": "Aggregate compliance posture dropped below 75% — CCO notification",
+   649→         "condition": "compliance_posture_score < 75 for 15m", "severity": "high",
+   650→         "agent": "Orchestrator", "channel": "#compliance-high",
+   651→         "runbook": "https://wiki/runbooks/posture-drop"},
+   652→        {"id": "ALR-008", "name": "BoilerplateReductionBelowTarget",
+   653→         "description": "Agent 1 boilerplate reduction below 60% target (PDF §3.1)",
+   654→         "condition": "boilerplate_reduction_pct < 60 for 30m", "severity": "low",
+   655→         "agent": "Ingestion_Agent", "channel": "#compliance-low",
+   656→         "runbook": "https://wiki/runbooks/boilerplate"},
+   657→        {"id": "ALR-009", "name": "SchemaValidationFailures",
+   658→         "description": "Agent 1 quarantining documents due to schema failures (PDF §3.2)",
+   659→         "condition": "schema_quarantines > 3 for 10m", "severity": "medium",
+   660→         "agent": "Ingestion_Agent", "channel": "#compliance-medium",
+   661→         "runbook": "https://wiki/runbooks/schema-failures"},
+   662→        {"id": "ALR-010", "name": "RegulatoryDeadlineApproaching",
+   663→         "description": "Regulation effective date within 7 days — remediation must complete",
+   664→         "condition": "days_until_effective < 7", "severity": "critical",
+   665→         "agent": "Orchestrator", "channel": "#compliance-critical",
+   666→         "runbook": "https://wiki/runbooks/regulatory-deadline"},
+   667→    ]
+   668→
+   669→
+   670→def generate_triggered_alerts(num_alerts=25):
+   671→    rules = generate_alert_rules()
+   672→    alerts = []
+   673→    for i in range(num_alerts):
+   674→        rule = rand_choice(rules)
+   675→        state = rand_choice(["firing", "firing", "firing", "resolved", "resolved", "acknowledged"])
+   676→        fired_at = ts(minutes_ago=random.randint(0, 55))
+   677→
+   678→        # Parse threshold
+   679→        cond = rule["condition"]
+   680→        threshold = 0
+   681→        try:
+   682→            if ">" in cond:
+   683→                threshold = float(cond.split(">")[1].split()[0])
+   684→            elif "<" in cond:
+   685→                threshold = float(cond.split("<")[1].split()[0])
+   686→        except (ValueError, IndexError):
+   687→            pass
+   688→
+   689→        alert = {
+   690→            "alertId": f"CALERT-{uuid.uuid4().hex[:8].upper()}",
+   691→            "ruleId": rule["id"],
+   692→            "ruleName": rule["name"],
+   693→            "description": rule["description"],
+   694→            "severity": rule["severity"],
+   695→            "state": state,
+   696→            "agent": rule["agent"],
+   697→            "firedAt": fired_at,
+   698→            "channel": rule["channel"],
+   699→            "runbook": rule["runbook"],
+   700→            "labels": {
+   701→                "env": rand_choice(["production", "production", "staging"]),
+   702→                "jurisdiction": rand_choice([r["jurisdiction"] for r in REGULATORY_SOURCES]),
+   703→                "team": rand_choice(["compliance", "security", "governance", "legal", "engineering"]),
+   704→            },
+   705→            "annotations": {
+   706→                "summary": f"{rule['name']} triggered on {rule['agent']}",
+   707→                "dashboard": f"https://compliance-swarm.internal/d/{rule['id']}",
+   708→                "spec_reference": "PDF §3.1 / §7.1 / §9.2",
+   709→            },
+   710→            "metrics": {
+   711→                "current_value": round(random.uniform(0.5, 2.5) * threshold, 2) if threshold else None,
+   712→                "threshold": threshold if threshold else None,
+   713→            },
+   714→        }
+   715→        if state in ("resolved", "acknowledged"):
+   716→            alert["resolvedAt"] = ts(minutes_ago=random.randint(0, 50))
+   717→            alert["durationMinutes"] = random.randint(2, 30)
+   718→
+   719→        alerts.append(alert)
+   720→
+   721→    alerts.sort(key=lambda x: x["firedAt"], reverse=True)
+   722→    return alerts
+   723→
+   724→
+   725→# ══════════════════════════════════════════════════════════════════════════════
+   726→# Stage 5: Agent Topology & Imperative Registry (NEW — per SKILLS.md matrix)
+   727→# ══════════════════════════════════════════════════════════════════════════════
+   728→
+   729→def generate_agent_topology():
+   730→    """Maps to SKILLS.md §1-§4 agent capability matrix."""
+   731→    return [
+   732→        {
+   733→            "name": "Ingestion_Agent",
+   734→            "role": "Deterministic Parser",
+   735→            "spec_section": "PDF §3 — Agent 1",
+   736→            "state": rand_choice(["processing", "idle", "processing", "completed"]),
+   737→            "skills": [
+   738→                {"name": "Source Polling & Web Scraping", "level": "L2", "artifacts": "Raw regulatory text corpus"},
+   739→                {"name": "Boilerplate Stripping", "level": "L3", "artifacts": "Cleaned regulatory text"},
+   740→                {"name": "JSON Schema Enforcement", "level": "L3", "artifacts": "Validated JSON envelope"},
+   741→                {"name": "Priority Scoring", "level": "L2", "artifacts": "Ranked ingestion queue"},
+   742→            ],
+   743→            "throughput_per_hour": random.randint(12, 18),
+   744→            "success_rate_pct": round(random.uniform(97.5, 99.8), 1),
+   745→            "schema_compliance_pct": 100.0,
+   746→        },
+   747→        {
+   748→            "name": "Legal_Analyst_Agent",
+   749→            "role": "Rules Engine",
+   750→            "spec_section": "PDF §4 — Agent 2",
+   751→            "state": rand_choice(["processing", "processing", "completed", "escalated"]),
+   752→            "skills": [
+   753→                {"name": "Statutory Deconstruction", "level": "L2", "artifacts": "Clause tree (JSON)"},
+   754→                {"name": "Obligation Extraction", "level": "L2", "artifacts": "Normalized obligation records"},
+   755→                {"name": "Logic Formalization", "level": "L3", "artifacts": "Machine-readable rule set"},
+   756→                {"name": "Cross-Reference Resolution", "level": "L3", "artifacts": "Dependency graph"},
+   757→                {"name": "Risk Categorization", "level": "L2", "artifacts": "Risk-tagged clause index"},
+   758→            ],
+   759→            "throughput_per_hour": random.randint(32, 45),
+   760→            "success_rate_pct": round(random.uniform(94.0, 98.5), 1),
+   761→            "schema_compliance_pct": 100.0,
+   762→        },
+   763→        {
+   764→            "name": "Prosecutor_Agent",
+   765→            "role": "Adversarial Evaluator",
+   766→            "spec_section": "PDF §5 — Agent 3",
+   767→            "state": rand_choice(["processing", "processing", "completed"]),
+   768→            "skills": [
+   769→                {"name": "Phase I Vector Search", "level": "L2", "artifacts": "Policy conflict report"},
+   770→                {"name": "Phase II SQL Execution", "level": "L2", "artifacts": "Technical violation report"},
+   771→                {"name": "Violation Detection", "level": "L3", "artifacts": "Violation ticket (JSON)"},
+   772→                {"name": "Temporal Compliance Tracking", "level": "L2", "artifacts": "Deadline dashboard feed"},
+   773→                {"name": "Audit Trail Generation", "level": "L3", "artifacts": "Signed audit log"},
+   774→            ],
+   775→            "throughput_per_hour": random.randint(3, 6),
+   776→            "success_rate_pct": round(random.uniform(91.0, 96.5), 1),
+   777→            "violation_detection_rate_pct": round(random.uniform(42, 58), 1),
+   778→        },
+   779→        {
+   780→            "name": "Defender_Agent",
+   781→            "role": "Remediation Engineer",
+   782→            "spec_section": "PDF §6 — Agent 4",
+   783→            "state": rand_choice(["processing", "completed", "escalated"]),
+   784→            "skills": [
+   785→                {"name": "Remediation Planning", "level": "L2", "artifacts": "Remediation plan (JSON + summary)"},
+   786→                {"name": "Policy Generation", "level": "L2", "artifacts": "Policy document (DOCX/PDF)"},
+   787→                {"name": "Human-in-the-Loop Routing", "level": "L2", "artifacts": "Escalation ticket"},
+   788→                {"name": "Engineering Ticket Generation", "level": "L3", "artifacts": "Jira/GitHub ticket with criteria"},
+   789→                {"name": "Exception & Waiver Management", "level": "L3", "artifacts": "Exception record"},
+   790→            ],
+   791→            "throughput_per_hour": random.randint(2, 5),
+   792→            "success_rate_pct": round(random.uniform(95.5, 99.0), 1),
+   793→            "traceability_enforced_pct": 100.0,
+   794→        },
+   795→    ]
+   796→
+   797→
+   798→def generate_imperative_registry(traces):
+   799→    """Aggregate imperatives from all traces — PDF §4 mandates unique IDs."""
+   800→    registry = []
+   801→    for t in traces:
+   802→        for imp in t["imperatives"]:
+   803→            registry.append(imp)
+   804→    return registry
+   805→
+   806→
+   807→def generate_violations(traces):
+   808→    """Extract violations from traces where Prosecutor found non-compliance."""
+   809→    violations = []
+   810→    for t in traces:
+   811→        if not t["violationDetected"]:
+   812→            continue
+   813→        for imp in t["imperatives"][:1]:  # 1 violation per violating scenario
+   814→            violations.append({
+   815→                "violation_id": f"VIO-{uuid.uuid4().hex[:8].upper()}",
+   816→                "scenario_id": t["scenarioId"],
+   817→                "trace_id": t["traceId"],
+   818→                "regulation_id": t["regulation"]["id"],
+   819→                "regulation_name": t["regulation"]["name"],
+   820→                "jurisdiction": t["regulation"]["jurisdiction"],
+   821→                "imperative_id": imp["id"],
+   822→                "imperative_text": imp["text"],
+   823→                "imperative_query": imp["query"],
+   824→                "risk_tier": imp["risk_tier"],
+   825→                "detected_at": t["startedAt"],
+   826→                "audit_phase": rand_choice(["I", "II"]),
+   827→                "phase_i_conflict": rand_choice([True, False]),
+   828→                "phase_ii_breach": True,
+   829→                "penalty_exposure_usd": round(random.uniform(50000, 4500000), 2),
+   830→                "remediation_status": rand_choice(["pending", "in_progress", "completed", "completed"]),
+   831→                "artifacts": t["artifactsGenerated"],
+   832→                "human_approval": rand_choice(["pending", "approved", "approved", "rejected"]),
+   833→            })
+   834→    return violations
+   835→
+   836→
+   837→# ══════════════════════════════════════════════════════════════════════════════
+   838→# Stage 6: Orchestration Layer (SKILLS.md §5)
+   839→#   - Compliance State Machine (6 states, valid transitions)
+   840→#   - Event Bus (topics, partitions, consumer groups, lag)
+   841→#   - Conflict Resolution (overlapping regulations)
+   842→#   - Immutable Audit Chain (append-only hash chain)
+   843→# ══════════════════════════════════════════════════════════════════════════════
+   844→
+   845→# Compliance state machine (matches state_machine_conflict_engine.py reference)
+   846→COMPLIANCE_STATES = ["compliant", "at_risk", "non_compliant", "under_remediation", "escalated", "audit_pending"]
+   847→
+   848→VALID_TRANSITIONS = {
+   849→    "compliant":          ["at_risk", "audit_pending"],
+   850→    "at_risk":            ["compliant", "non_compliant", "under_remediation"],
+   851→    "non_compliant":      ["under_remediation", "escalated"],
+   852→    "under_remediation":  ["compliant", "at_risk", "non_compliant"],
+   853→    "escalated":          ["under_remediation", "non_compliant"],
+   854→    "audit_pending":      ["compliant", "at_risk", "non_compliant"],
+   855→}
+   856→
+   857→STATE_SCORE_DELTA = {
+   858→    "compliant": 25, "at_risk": -15, "non_compliant": -30,
+   859→    "under_remediation": -5, "escalated": -25, "audit_pending": -5,
+   860→}
+   861→
+   862→TRIGGERS = [
+   863→    "regulatory_change_detected", "violation_confirmed", "remediation_started",
+   864→    "remediation_completed", "human_approval_granted", "human_approval_denied",
+   865→    "audit_initiated", "audit_completed_pass", "audit_completed_fail",
+   866→    "risk_threshold_exceeded", "deadline_approaching",
+   867→]
+   868→
+   869→ENTITY_TYPES = [
+   870→    ("data_store", "PHI Database", "HIPAA"),
+   871→    ("api_endpoint", "Patient Access API", "HIPAA"),
+   872→    ("iam_policy", "Admin Role IAM", "PCI-DSS"),
+   873→    ("data_store", "Customer PII Store", "GDPR"),
+   874→    ("ai_system", "Loan Decision Model", "EU-AI-ACT"),
+   875→    ("infrastructure", "CDE Network Segment", "PCI-DSS"),
+   876→    ("application", "Trading Platform", "SEC"),
+   877→    ("data_store", "Audit Log Store", "ISO27001"),
+   878→]
+   879→
+   880→
+   881→def generate_state_machine(num_transitions=40):
+   882→    """SKILLS.md §5: State Management — compliance state machine."""
+   883→    entities = []
+   884→    for i, (etype, edesc, jurisdiction) in enumerate(ENTITY_TYPES):
+   885→        eid = f"ENT-{etype.upper()[:3]}-{i+1:03d}"
+   886→        entities.append({
+   887→            "id": eid,
+   888→            "type": etype,
+   889→            "description": edesc,
+   890→            "jurisdiction": jurisdiction,
+   891→            "current_state": "compliant",
+   892→            "registered_at": ts(minutes_ago=240 - i * 10),
+   893→            "compliance_score": 100.0,
+   894→            "risk_factors": [],
+   895→        })
+   896→
+   897→    transitions = []
+   898→    state_histories = {e["id"]: [e["current_state"]] for e in entities}
+   899→    metrics = {"transitions": 0, "escalations": 0, "resolutions": 0, "invalid_attempts": 0}
+   900→
+   901→    for i in range(num_transitions):
+   902→        entity = rand_choice(entities)
+   903→        from_state = entity["current_state"]
+   904→        valid_targets = VALID_TRANSITIONS.get(from_state, [])
+   905→        if not valid_targets:
+   906→            continue
+   907→        to_state = rand_choice(valid_targets)
+   908→        trigger = rand_choice(TRIGGERS)
+   909→        transition_id = f"TRN-{uuid.uuid4().hex[:8].upper()}"
+   910→        approved_by = None
+   911→        if to_state == "under_remediation" or to_state == "escalated":
+   912→            approved_by = rand_choice(["cco@company.com", "ciso@company.com", "legal-counsel@company.com"])
+   913→
+   914→        transition = {
+   915→            "transition_id": transition_id,
+   916→            "entity_id": entity["id"],
+   917→            "entity_type": entity["type"],
+   918→            "entity_description": entity["description"],
+   919→            "from_state": from_state,
+   920→            "to_state": to_state,
+   921→            "trigger": trigger,
+   922→            "evidence": [
+   923→                f"Triggered by: {trigger}",
+   924→                f"Trace ID: {uuid.uuid4().hex[:16]}",
+   925→                f"Regulation: {entity['jurisdiction']}",
+   926→            ],
+   927→            "timestamp": ts(minutes_ago=random.randint(0, 200)),
+   928→            "trace_id": uuid.uuid4().hex[:16],
+   929→            "approved_by": approved_by,
+   930→            "compliance_score_before": entity["compliance_score"],
+   931→            "compliance_score_after": round(max(0, min(100, entity["compliance_score"] + STATE_SCORE_DELTA[to_state])), 1),
+   932→        }
+   933→        transitions.append(transition)
+   934→        entity["current_state"] = to_state
+   935→        entity["compliance_score"] = transition["compliance_score_after"]
+   936→        state_histories[entity["id"]].append(to_state)
+   937→        metrics["transitions"] += 1
+   938→        if to_state == "escalated":
+   939→            metrics["escalations"] += 1
+   940→        if to_state == "compliant" and from_state != "audit_pending":
+   941→            metrics["resolutions"] += 1
+   942→
+   943→    transitions.sort(key=lambda t: t["timestamp"], reverse=True)
+   944→    return {
+   945→        "entities": entities,
+   946→        "total_transitions": len(transitions),
+   947→        "transitions": transitions[:30],  # Top 30 most recent
+   948→        "state_histories": state_histories,
+   949→        "valid_transitions": VALID_TRANSITIONS,
+   950→        "metrics": metrics,
+   951→        "state_distribution": {
+   952→            state: len([e for e in entities if e["current_state"] == state])
+   953→            for state in COMPLIANCE_STATES
+   954→        },
+   955→    }
+   956→
+   957→
+   958→# Event bus topics (matches agent_swarm_core.py reference)
+   959→EVENT_BUS_TOPICS = [
+   960→    {"name": "regulatory.changes", "partitions": 3, "consumer_group": "legal_analysts",
+   961→     "description": "Raw regulation events from Agent 1"},
+   962→    {"name": "analysis.results", "partitions": 3, "consumer_group": "prosecutors",
+   963→     "description": "Imperative extraction results from Agent 2"},
+   964→    {"name": "gap.findings", "partitions": 3, "consumer_group": "defenders",
+   965→     "description": "Violation reports from Agent 3"},
+   966→    {"name": "remediation.plans", "partitions": 3, "consumer_group": "auditors",
+   967→     "description": "Remediation artifacts from Agent 4"},
+   968→    {"name": "governance.audit", "partitions": 5, "consumer_group": "auditors",
+   969→     "description": "Audit trail events (immutable)"},
+   970→    {"name": "escalation.requests", "partitions": 2, "consumer_group": "compliance_leads",
+   971→     "description": "Human-in-loop escalation requests"},
+   972→    {"name": "state.transitions", "partitions": 4, "consumer_group": "orchestrator",
+   973→     "description": "Compliance state machine transitions"},
+   974→    {"name": "conflict.alerts", "partitions": 2, "consumer_group": "legal_analysts",
+   975→     "description": "Regulatory conflict notifications"},
+   976→]
+   977→
+   978→
+   979→def generate_event_bus():
+   980→    """SKILLS.md §5: Event-Driven Dispatch."""
+   981→    topics = []
+   982→    for topic_def in EVENT_BUS_TOPICS:
+   983→        partitions = []
+   984→        for p in range(topic_def["partitions"]):
+   985→            messages = random.randint(120, 950)
+   986→            consumed = messages - random.randint(0, 35)
+   987→            partitions.append({
+   988→                "partition": p,
+   989→                "messages_total": messages,
+   990→                "messages_consumed": consumed,
+   991→                "lag": messages - consumed,
+   992→                "offset_latest": messages + 1000,
+   993→                "earliest_offset": 1000,
+   994→                "size_mb": round(messages * random.uniform(0.8, 2.4), 1),
+   995→            })
+   996→        topics.append({
+   997→            "name": topic_def["name"],
+   998→            "description": topic_def["description"],
+   999→            "consumer_group": topic_def["consumer_group"],
+  1000→            "partitions": partitions,
+  1001→            "total_messages": sum(p["messages_total"] for p in partitions),
+  1002→            "total_lag": sum(p["lag"] for p in partitions),
+  1003→            "total_size_mb": round(sum(p["size_mb"] for p in partitions), 1),
+  1004→            "avg_throughput_per_min": round(random.uniform(50, 320), 1),
+  1005→            "consumer_group_lag": random.randint(0, 35),
+  1006→        })
+  1007→
+  1008→    return {
+  1009→        "topics": topics,
+  1010→        "total_topics": len(topics),
+  1011→        "total_messages": sum(t["total_messages"] for t in topics),
+  1012→        "total_lag": sum(t["total_lag"] for t in topics),
+  1013→        "total_size_mb": round(sum(t["total_size_mb"] for t in topics), 1),
+  1014→        "metrics": {
+  1015→            "published_total": sum(t["total_messages"] for t in topics),
+  1016→            "consumed_total": sum(t["total_messages"] - t["total_lag"] for t in topics),
+  1017→            "failed_total": random.randint(2, 18),
+  1018→            "avg_latency_ms": round(random.uniform(8, 42), 1),
+  1019→        },
+  1020→    }
+  1021→
+  1022→
+  1023→# Conflict resolution (matches state_machine_conflict_engine.py reference)
+  1024→CONFLICT_TYPES = [
+  1025→    "penalty_discrepancy",    # Different penalties for same violation
+  1026→    "temporal_conflict",      # Different deadlines
+  1027→    "jurisdictional_overlap", # Multiple jurisdictions claim authority
+  1028→    "requirement_contradiction",  # Direct contradiction
+  1029→    "scope_overlap",          # Regulations apply to same scope
+  1030→]
+  1031→
+  1032→CONFLICT_RESOLUTION_STRATEGIES = [
+  1033→    ("apply_strictest", "Apply the most stringent requirement"),
+  1034→    ("jurisdictional_split", "Apply different rules by geography"),
+  1035→    ("regulation_a_takes_precedence", "Newer regulation supersedes older"),
+  1036→    ("merge_requirements", "Combine all requirements"),
+  1037→    ("escalate_to_legal", "Escalate to human legal review"),
+  1038→    ("temporal_supersede", "Newer temporal rule wins"),
+  1039→]
+  1040→
+  1041→
+  1042→def generate_conflicts(num_conflicts=15):
+  1043→    """SKILLS.md §5: Conflict Resolution — between overlapping regulations."""
+  1044→    conflicts = []
+  1045→    for i in range(num_conflicts):
+  1046→        reg_a = rand_choice(REGULATORY_SOURCES)
+  1047→        reg_b = rand_choice([r for r in REGULATORY_SOURCES if r["id"] != reg_a["id"]])
+  1048→        conflict_type = rand_choice(CONFLICT_TYPES)
+  1049→        strategy, strategy_desc = rand_choice(CONFLICT_RESOLUTION_STRATEGIES)
+  1050→        is_resolved = random.random() < 0.7  # 70% resolved
+  1051→        severity = rand_choice(["critical", "high", "high", "medium", "medium", "low"])
+  1052→
+  1053→        clause_pairs = [
+  1054→            ("30-day retention", "15-day retention"),
+  1055→            ("AES-256 encryption", "AES-128 encryption acceptable"),
+  1056→            ("Annual access review", "Quarterly access review"),
+  1057→            ("MFA required for admin", "MFA optional for trusted networks"),
+  1058→            ("365-day audit log", "7-year audit log"),
+  1059→            ("Cross-border transfer allowed", "Cross-border transfer prohibited"),
+  1060→            ("Human oversight mandatory", "Automated oversight acceptable"),
+  1061→        ]
+  1062→        clause_a, clause_b = rand_choice(clause_pairs)
+  1063→
+  1064→        conflict = {
+  1065→            "conflict_id": f"CNF-{uuid.uuid4().hex[:8].upper()}",
+  1066→            "regulation_a": reg_a["name"],
+  1067→            "regulation_b": reg_b["name"],
+  1068→            "regulation_a_id": reg_a["id"],
+  1069→            "regulation_b_id": reg_b["id"],
+  1070→            "clause_a": clause_a,
+  1071→            "clause_b": clause_b,
+  1072→            "conflict_type": conflict_type,
+  1073→            "severity": severity,
+  1074→            "description": _build_conflict_description(conflict_type, reg_a, reg_b, clause_a, clause_b),
+  1075→            "status": "resolved" if is_resolved else "pending",
+  1076→            "resolution_strategy": strategy if is_resolved else None,
+  1077→            "resolution_description": strategy_desc if is_resolved else None,
+  1078→            "resolution": f"Resolved using strategy: {strategy}" if is_resolved else None,
+  1079→            "resolved_at": ts(minutes_ago=random.randint(0, 100)) if is_resolved else None,
+  1080→            "detected_at": ts(minutes_ago=random.randint(0, 200)),
+  1081→            "winner": "regulation_a" if is_resolved and strategy in ("regulation_a_takes_precedence", "apply_strictest") and reg_a["tier"] == "Critical"
+  1082→                     else "regulation_b" if is_resolved and strategy in ("regulation_a_takes_precedence", "apply_strictest") and reg_b["tier"] == "Critical"
+  1083→                     else ("merged" if is_resolved and strategy == "merge_requirements"
+  1084→                           else "split" if is_resolved and strategy == "jurisdictional_split"
+  1085→                           else "legal" if is_resolved and strategy == "escalate_to_legal"
+  1086→                           else None),
+  1087→        }
+  1088→        conflicts.append(conflict)
+  1089→
+  1090→    conflicts.sort(key=lambda c: c["detected_at"], reverse=True)
+  1091→    return {
+  1092→        "total_detected": len(conflicts),
+  1093→        "total_resolved": len([c for c in conflicts if c["status"] == "resolved"]),
+  1094→        "total_pending": len([c for c in conflicts if c["status"] == "pending"]),
+  1095→        "records": conflicts,
+  1096→        "conflict_types": list(set(c["conflict_type"] for c in conflicts)),
+  1097→        "resolution_strategies_used": list(set(c["resolution_strategy"] for c in conflicts if c["resolution_strategy"])),
+  1098→        "by_severity": {
+  1099→            sev: len([c for c in conflicts if c["severity"] == sev])
+  1100→            for sev in ["critical", "high", "medium", "low"]
+  1101→        },
+  1102→    }
+  1103→
+  1104→
+  1105→def _build_conflict_description(conflict_type, reg_a, reg_b, clause_a, clause_b):
+  1106→    templates = {
+  1107→        "penalty_discrepancy": f"{reg_a['name']} prescribes penalty for '{clause_a}' while {reg_b['name']} prescribes different penalty for '{clause_b}'",
+  1108→        "temporal_conflict": f"{reg_a['name']} requires '{clause_a}' but {reg_b['name']} requires '{clause_b}' — incompatible timing",
+  1109→        "jurisdictional_overlap": f"{reg_a['name']} ({reg_a['jurisdiction']}) and {reg_b['name']} ({reg_b['jurisdiction']}) both claim authority over '{clause_a}' vs '{clause_b}'",
+  1110→        "requirement_contradiction": f"Direct contradiction: '{clause_a}' (from {reg_a['name']}) vs '{clause_b}' (from {reg_b['name']})",
+  1111→        "scope_overlap": f"Both {reg_a['name']} and {reg_b['name']} apply to same scope — '{clause_a}' vs '{clause_b}'",
+  1112→    }
+  1113→    return templates.get(conflict_type, "Conflict detected between regulations")
+  1114→
+  1115→
+  1116→def generate_audit_chain(num_entries=30):
+  1117→    """SKILLS.md §5: Immutability & Versioning — append-only audit chain with hash linking."""
+  1118→    entries = []
+  1119→    prev_hash = "0" * 64  # Genesis block
+  1120→    
+  1121→    for i in range(num_entries):
+  1122→        event_type = rand_choice([
+  1123→            "state_transition", "agent_output_published", "violation_detected",
+  1124→            "remediation_artifact_generated", "human_approval_granted", "human_approval_denied",
+  1125→            "conflict_detected", "conflict_resolved", "schema_validation_passed",
+  1126→            "audit_trail_signed", "evidence_collected",
+  1127→        ])
+  1128→        agent = rand_choice(AGENTS)["name"]
+  1129→        entity_id = f"ENT-{rand_choice(['PHI','PII','API','IAM','AI','INF'])}-{random.randint(1,8):03d}"
+  1130→        timestamp = ts(minutes_ago=(num_entries - i))
+  1131→        
+  1132→        payload = {
+  1133→            "event_type": event_type,
+  1134→            "agent": agent,
+  1135→            "entity_id": entity_id,
+  1136→            "trace_id": uuid.uuid4().hex[:16],
+  1137→            "scenario_id": f"SCN-{uuid.uuid4().hex[:8].upper()}" if random.random() < 0.5 else None,
+  1138→            "imperative_id": f"IMP-{random.randint(1000,9999)}" if random.random() < 0.4 else None,
+  1139→            "details": f"{event_type.replace('_', ' ')} on {entity_id}",
+  1140→        }
+  1141→        payload_str = json.dumps(payload, sort_keys=True)
+  1142→        current_hash = hashlib.sha256((prev_hash + payload_str).encode()).hexdigest()
+  1143→        verification_status = "verified" if random.random() > 0.05 else "mismatch"  # 5% tampering simulation
+  1144→        
+  1145→        entries.append({
+  1146→            "entry_id": f"AUD-{i+1:04d}",
+  1147→            "sequence": i + 1,
+  1148→            "timestamp": timestamp,
+  1149→            "event_type": event_type,
+  1150→            "agent": agent,
+  1151→            "entity_id": entity_id,
+  1152→            "payload": payload,
+  1153→            "previous_hash": prev_hash[:32] + "..." if len(prev_hash) > 32 else prev_hash,
+  1154→            "current_hash": current_hash[:32] + "..." if len(current_hash) > 32 else current_hash,
+  1155→            "full_previous_hash": prev_hash,
+  1156→            "full_current_hash": current_hash,
+  1157→            "verification_status": verification_status,
+  1158→            "storage_location": f"s3://compliance-audit-chain/{ts(0)[:10]}/{i+1:04d}.json",
+  1159→            "signed_by": "compliance-audit-kms" if verification_status == "verified" else None,
+  1160→            "signature_algorithm": "SHA-256 + RSA-4096" if verification_status == "verified" else None,
+  1161→        })
+  1162→        prev_hash = current_hash
+  1163→    
+  1164→    verified_count = len([e for e in entries if e["verification_status"] == "verified"])
+  1165→    mismatch_count = len(entries) - verified_count
+  1166→    return {
+  1167→        "entries": entries,
+  1168→        "total_entries": len(entries),
+  1169→        "verified_entries": verified_count,
+  1170→        "mismatch_entries": mismatch_count,
+  1171→        "chain_integrity": "intact" if mismatch_count == 0 else "compromised",
+  1172→        "genesis_hash": "0" * 64,
+  1173→        "latest_hash": entries[-1]["full_current_hash"] if entries else None,
+  1174→        "storage_backend": "S3 + DynamoDB (append-only, versioned)",
+  1175→        "retention_policy": "7 years (regulatory requirement)",
+  1176→        "signature_algorithm": "SHA-256 + RSA-4096 (HSM-backed)",
+  1177→    }
+  1178→
+  1179→
+  1180→# ══════════════════════════════════════════════════════════════════════════════
+  1181→# MAIN
+  1182→# ══════════════════════════════════════════════════════════════════════════════
+  1183→
+  1184→def main():
+  1185→    print("=" * 70)
+  1186→    print("  Autonomous Regulatory Compliance Agent Swarm — Observability")
+  1187→    print("  Implements PDF §3-§7 + SKILLS.md §1-§5")
+  1188→    print("=" * 70)
+  1189→
+  1190→    print("\n[Stage 1] Generating 4-agent swarm traces (20 push-update scenarios)...")
+  1191→    traces = generate_swarm_traces(num_scenarios=20)
+  1192→    total_spans = sum(t["spanCount"] for t in traces)
+  1193→    violations_count = sum(1 for t in traces if t["violationDetected"])
+  1194→    print(f"       Generated {len(traces)} scenarios, {total_spans} spans")
+  1195→    print(f"       Violations detected: {violations_count}/{len(traces)} (adversarial stance)")
+  1196→
+  1197→    print("[Stage 2] Generating swarm-specific compliance metrics...")
+  1198→    metrics = generate_metrics(num_points=60)
+  1199→    print(f"       Generated {len(metrics['system'])} metric series")
+  1200→
+  1201→    print("[Stage 3] Generating agent activity logs...")
+  1202→    logs = generate_logs(num_logs=200)
+  1203→    level_counts = {}
+  1204→    for log in logs:
+  1205→        level_counts[log["level"]] = level_counts.get(log["level"], 0) + 1
+  1206→    print(f"       Generated {len(logs)} log entries")
+  1207→    for level, count in sorted(level_counts.items()):
+  1208→        print(f"         {level}: {count}")
+  1209→
+  1210→    print("[Stage 4] Generating compliance alert rules & triggered alerts...")
+  1211→    alert_rules = generate_alert_rules()
+  1212→    triggered_alerts = generate_triggered_alerts(num_alerts=25)
+  1213→    print(f"       Defined {len(alert_rules)} alert rules (mapped to PDF §3, §7, §9)")
+  1214→    print(f"       Generated {len(triggered_alerts)} triggered alerts")
+  1215→
+  1216→    print("[Stage 5] Generating agent topology & imperative registry...")
+  1217→    agent_topology = generate_agent_topology()
+  1218→    imperative_registry = generate_imperative_registry(traces)
+  1219→    violations = generate_violations(traces)
+  1220→    print(f"       Topology: {len(agent_topology)} agents (Ingestion→Analyst→Prosecutor→Defender)")
+  1221→    print(f"       Imperative registry: {len(imperative_registry)} imperatives with unique IDs")
+  1222→    print(f"       Violations: {len(violations)} (with full traceability chain)")
+  1223→
+  1224→    # Stage 6: Orchestration Layer (SKILLS.md §5 + PDF §7)
+  1225→    print("[Stage 6] Generating orchestration layer (state machine, event bus, conflicts, audit chain)...")
+  1226→    state_machine = generate_state_machine(num_transitions=40)
+  1227→    event_bus = generate_event_bus()
+  1228→    conflicts = generate_conflicts(num_conflicts=15)
+  1229→    audit_chain = generate_audit_chain(num_entries=30)
+  1230→    print(f"       State machine: {len(state_machine['entities'])} entities, {state_machine['total_transitions']} transitions")
+  1231→    print(f"       Event bus: {event_bus['total_topics']} topics, {event_bus['total_messages']} messages")
+  1232→    print(f"       Conflicts: {conflicts['total_detected']} detected, {conflicts['total_resolved']} resolved")
+  1233→    print(f"       Audit chain: {audit_chain['total_entries']} entries, integrity={audit_chain['chain_integrity']}")
+  1234→
+  1235→    output = {
+  1236→        "generatedAt": NOW.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+  1237→        "generator": "autonomous-compliance-agent-swarm",
+  1238→        "version": "4.0.0",
+  1239→        "project": "Autonomous Regulatory Compliance Agent Swarm",
+  1240→        "specification": "Technical Specification v1.0 (July 2026)",
+  1241→        "architecture": {
+  1242→            "model": "Push-based 4-agent swarm (PDF §2)",
+  1243→            "agents": ["Ingestion_Agent", "Legal_Analyst_Agent", "Prosecutor_Agent", "Defender_Agent"],
+  1244→            "pipeline": "Ingestion → Imperative Extraction → Adversarial Audit → Remediation Engineering → Human-in-Loop",
+  1245→            "guardrails": [
+  1246→                "PDF §9.1 Source Fidelity — no external data, context only",
+  1247→                "PDF §9.2 Traceable Remediation — all artifacts must map to imperative ID",
+  1248→                "PDF §9.3 Deterministic Formatting — strict JSON schema between agents",
+  1249→            ],
+  1250→        },
+  1251→        "data": {
+  1252→            "traces": traces,
+  1253→            "metrics": metrics,
+  1254→            "logs": logs,
+  1255→            "alerting": {"rules": alert_rules, "triggeredAlerts": triggered_alerts},
+  1256→            "agentTopology": agent_topology,
+  1257→            "imperativeRegistry": imperative_registry,
+  1258→            "violations": violations,
+  1259→            "stateMachine": state_machine,
+  1260→            "eventBus": event_bus,
+  1261→            "conflicts": conflicts,
+  1262→            "auditChain": audit_chain,
+  1263→        },
+  1264→        "statistics": {
+  1265→            "totalScenarios": len(traces),
+  1266→            "totalSpans": total_spans,
+  1267→            "violationScenarios": violations_count,
+  1268→            "totalImperatives": len(imperative_registry),
+  1269→            "totalViolations": len(violations),
+  1270→            "totalLogs": len(logs),
+  1271→            "errorLogs": level_counts.get("ERROR", 0) + level_counts.get("FATAL", 0),
+  1272→            "totalAlertRules": len(alert_rules),
+  1273→            "firingAlerts": len([a for a in triggered_alerts if a["state"] == "firing"]),
+  1274→            "resolvedAlerts": len([a for a in triggered_alerts if a["state"] == "resolved"]),
+  1275→            "frameworks": len(set(r["jurisdiction"] for r in REGULATORY_SOURCES)),
+  1276→            "regulationsMonitored": len(REGULATORY_SOURCES),
+  1277→            "agents": len(agent_topology),
+  1278→            "stateEntities": len(state_machine["entities"]),
+  1279→            "stateTransitions": state_machine["total_transitions"],
+  1280→            "eventBusTopics": event_bus["total_topics"],
+  1281→            "eventBusMessages": event_bus["total_messages"],
+  1282→            "conflictsDetected": conflicts["total_detected"],
+  1283→            "conflictsResolved": conflicts["total_resolved"],
+  1284→            "auditChainEntries": audit_chain["total_entries"],
+  1285→            "auditChainIntact": audit_chain["chain_integrity"] == "intact",
+  1286→        }
+  1287→    }
+  1288→
+  1289→    with open(OUTPUT_PATH, "w") as f:
+  1290→        json.dump(output, f, indent=2)
+  1291→
+  1292→    print(f"\n{'=' * 70}")
+  1293→    print(f"  Output: {OUTPUT_PATH}")
+  1294→    print(f"  Size: {len(json.dumps(output)):,} bytes")
+  1295→    print(f"{'=' * 70}")
+  1296→    return output
+  1297→
+  1298→
+  1299→if __name__ == "__main__":
+  1300→    main()
+  1301→
