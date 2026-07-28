@@ -6,19 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
-  BarChart3,
-  Activity,
-  Clock,
-  FileText,
-  Shield,
-  Layers,
-  Cpu,
-  Github,
-  RefreshCw,
-  ShieldCheck,
-  Database,
-  Zap,
-  Lock,
+  BarChart3, Activity, Clock, FileText, Shield, Cpu, Github, RefreshCw,
+  ShieldCheck, Database, Layers, Scale, Gavel, Network,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -26,40 +15,46 @@ import { MetricsCharts } from '@/components/dashboard/metrics-charts'
 import { TracesPanel } from '@/components/dashboard/traces-panel'
 import { LogsPanel } from '@/components/dashboard/logs-panel'
 import { AlertsPanel } from '@/components/dashboard/alerts-panel'
+import { AgentTopologyPanel } from '@/components/dashboard/agent-topology'
+import { ImperativeRegistryPanel } from '@/components/dashboard/imperative-registry'
+import { ViolationsPanel } from '@/components/dashboard/violations-panel'
 
 interface ObservabilityData {
   generatedAt: string
   generator: string
   version: string
   project: string
+  specification: string
+  architecture: {
+    model: string
+    agents: string[]
+    pipeline: string
+    guardrails: string[]
+  }
   statistics: {
-    totalTraces: number
+    totalScenarios: number
     totalSpans: number
-    errorTraces: number
+    violationScenarios: number
+    totalImperatives: number
+    totalViolations: number
     totalLogs: number
     errorLogs: number
-    totalAlertRules: number
     firingAlerts: number
     resolvedAlerts: number
-    services: number
     frameworks: number
+    regulationsMonitored: number
+    agents: number
   }
   data: {
     traces: any[]
-    metrics: {
-      system: Record<string, any>
-      compliance: Record<string, any>
-      summary: Record<string, number>
-    }
+    metrics: { system: Record<string, any>; summary: Record<string, number> }
     logs: any[]
-    alerting: {
-      rules: any[]
-      triggeredAlerts: any[]
-    }
+    alerting: { rules: any[]; triggeredAlerts: any[] }
+    agentTopology: any[]
+    imperativeRegistry: any[]
+    violations: any[]
   }
 }
-
-const FRAMEWORKS = ['SOC2', 'GDPR', 'HIPAA', 'ISO27001', 'PCI-DSS', 'NIST-CSF', 'CIS']
 
 export default function Home() {
   const [data, setData] = useState<ObservabilityData | null>(null)
@@ -88,7 +83,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="h-8 w-8 text-muted-foreground animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading compliance observability data...</p>
+          <p className="text-muted-foreground text-sm">Loading agent swarm observability data...</p>
         </div>
       </div>
     )
@@ -101,17 +96,17 @@ export default function Home() {
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-6 w-6 text-emerald-500" />
-              <h1 className="text-lg font-bold tracking-tight">Autonomous Compliance</h1>
+              <Network className="h-6 w-6 text-emerald-500" />
+              <h1 className="text-lg font-bold tracking-tight">Autonomous Compliance Agent Swarm</h1>
               <Badge variant="outline" className="text-xs hidden sm:inline-flex">Observability</Badge>
             </div>
             <Badge variant="outline" className="text-xs hidden md:inline-flex">
               <Layers className="h-3 w-3 mr-1" />
-              {data.statistics.frameworks} frameworks
+              {data.statistics.agents} agents
             </Badge>
             <Badge variant="outline" className="text-xs hidden md:inline-flex">
-              <Activity className="h-3 w-3 mr-1" />
-              {data.statistics.services} services
+              <Shield className="h-3 w-3 mr-1" />
+              {data.statistics.frameworks} frameworks
             </Badge>
             {data.statistics.firingAlerts > 0 && (
               <Badge variant="destructive" className="text-xs animate-pulse">
@@ -126,7 +121,7 @@ export default function Home() {
               Refresh
             </Button>
             <Button variant="outline" size="sm" className="text-xs" asChild>
-              <a href="https://github.com/z-ai-oss/autonomous-compliance" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator" target="_blank" rel="noopener noreferrer">
                 <Github className="h-3.5 w-3.5 mr-1" />
                 GitHub
               </a>
@@ -143,13 +138,25 @@ export default function Home() {
               <BarChart3 className="h-3.5 w-3.5" />
               Overview
             </TabsTrigger>
+            <TabsTrigger value="topology" className="text-xs gap-1.5">
+              <Network className="h-3.5 w-3.5" />
+              Agent Topology
+            </TabsTrigger>
             <TabsTrigger value="metrics" className="text-xs gap-1.5">
-              <Cpu className="h-3.5 w-3.5" />
+              <Activity className="h-3.5 w-3.5" />
               Metrics
             </TabsTrigger>
             <TabsTrigger value="traces" className="text-xs gap-1.5">
               <Clock className="h-3.5 w-3.5" />
-              Traces
+              Pipeline Traces
+            </TabsTrigger>
+            <TabsTrigger value="imperatives" className="text-xs gap-1.5">
+              <Scale className="h-3.5 w-3.5" />
+              Imperatives
+            </TabsTrigger>
+            <TabsTrigger value="violations" className="text-xs gap-1.5">
+              <Gavel className="h-3.5 w-3.5" />
+              Violations
             </TabsTrigger>
             <TabsTrigger value="logs" className="text-xs gap-1.5">
               <FileText className="h-3.5 w-3.5" />
@@ -163,54 +170,63 @@ export default function Home() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Hero — Architecture summary */}
+            <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-50/50 to-blue-50/30 dark:from-emerald-950/20 dark:to-blue-950/10">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4 flex-wrap">
+                  <ShieldCheck className="h-10 w-10 text-emerald-500 shrink-0" />
+                  <div className="flex-1 min-w-[260px]">
+                    <h2 className="text-xl font-bold mb-1">Push-Based 4-Agent Compliance Swarm</h2>
+                    <p className="text-sm text-muted-foreground mb-3">{data.architecture.model}</p>
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                      {data.architecture.agents.map((agent, i) => (
+                        <span key={agent} className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-[10px]">{agent.replace('_', ' ')}</Badge>
+                          {i < data.architecture.agents.length - 1 && <span className="text-muted-foreground">→</span>}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">{data.architecture.pipeline}</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-[10px]">
+                    {data.architecture.guardrails.map((g, i) => (
+                      <Badge key={i} variant="outline" className="text-[9px] py-0.5 px-1.5">{g}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Hero Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="border-emerald-500/20 bg-emerald-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-emerald-500">{data.statistics.frameworks}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Frameworks Monitored</div>
+                  <div className="text-3xl font-bold text-emerald-500">{data.statistics.regulationsMonitored}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Regulations Monitored</div>
                 </CardContent>
               </Card>
               <Card className="border-purple-500/20 bg-purple-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-purple-500">{data.statistics.totalTraces}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Compliance Traces</div>
+                  <div className="text-3xl font-bold text-purple-500">{data.statistics.totalImperatives}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Active Imperatives</div>
                 </CardContent>
               </Card>
               <Card className="border-amber-500/20 bg-amber-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-amber-500">{data.statistics.totalLogs}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Audit Events</div>
+                  <div className="text-3xl font-bold text-amber-500">{data.statistics.totalScenarios}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Pipeline Scenarios</div>
                 </CardContent>
               </Card>
               <Card className="border-red-500/20 bg-red-500/5">
                 <CardContent className="p-4 text-center">
-                  <div className="text-3xl font-bold text-red-500">{data.statistics.firingAlerts}</div>
-                  <div className="text-xs text-muted-foreground mt-1">Firing Alerts</div>
+                  <div className="text-3xl font-bold text-red-500">{data.statistics.totalViolations}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Violations Detected</div>
                 </CardContent>
               </Card>
             </div>
 
             {/* KPI Cards */}
             <StatsCards stats={data.statistics} metricsSummary={data.data.metrics.summary} />
-
-            {/* Framework Coverage Badges */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold">Compliance Frameworks</h3>
-                  <span className="text-xs text-muted-foreground">{data.statistics.frameworks} active</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {FRAMEWORKS.map((fw) => (
-                    <Badge key={fw} variant="outline" className="text-xs gap-1 py-1 px-3">
-                      <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                      {fw}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
             {/* API Endpoints */}
             <Card>
@@ -224,11 +240,11 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { method: 'GET', path: '/api/observability', desc: 'Full observability data (traces, metrics, logs, alerts)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
-                    { method: 'GET', path: '/api/observability/traces', desc: 'Distributed compliance workflow traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
-                    { method: 'GET', path: '/api/observability/metrics', desc: 'Compliance & system time-series metrics', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
-                    { method: 'GET', path: '/api/observability/logs', desc: 'Structured audit event logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-                    { method: 'GET', path: '/api/observability/alerts', desc: 'Alert rules & triggered compliance alerts', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+                    { method: 'GET', path: '/api/observability', desc: 'Full swarm observability data', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/traces', desc: '4-agent pipeline traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+                    { method: 'GET', path: '/api/observability/metrics', desc: 'Swarm pipeline metrics', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+                    { method: 'GET', path: '/api/observability/logs', desc: 'Agent activity & audit logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+                    { method: 'GET', path: '/api/observability/alerts', desc: 'Swarm alert rules & triggered alerts', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
                   ].map((ep) => (
                     <div key={ep.path} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
@@ -238,9 +254,7 @@ export default function Home() {
                         variant="ghost"
                         size="sm"
                         className="h-6 text-[10px] px-2 shrink-0"
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.origin + ep.path)
-                        }}
+                        onClick={() => navigator.clipboard.writeText(window.location.origin + ep.path)}
                       >
                         Copy
                       </Button>
@@ -249,62 +263,32 @@ export default function Home() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Mini Metrics */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">Quick Metrics Glance</h3>
-                <Button variant="link" size="sm" className="text-xs" onClick={() => setActiveTab('metrics')}>
-                  View all metrics →
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MetricsQuickChart
-                  title="Compliance Score"
-                  data={data.data.metrics.compliance.compliance_score_percent.data}
-                  unit="%"
-                  color="#22c55e"
-                  threshold={75}
-                />
-                <MetricsQuickChart
-                  title="Violation Rate"
-                  data={data.data.metrics.compliance.violation_rate_per_min.data}
-                  unit="violations/min"
-                  color="#ef4444"
-                  threshold={5}
-                />
-                <MetricsQuickChart
-                  title="Risk Score"
-                  data={data.data.metrics.compliance.risk_score.data}
-                  unit="score"
-                  color="#f97316"
-                />
-                <MetricsQuickChart
-                  title="Audit Coverage"
-                  data={data.data.metrics.compliance.audit_coverage_percent.data}
-                  unit="%"
-                  color="#8b5cf6"
-                />
-              </div>
-            </div>
           </TabsContent>
 
-          {/* Metrics Tab */}
+          <TabsContent value="topology">
+            <AgentTopologyPanel agents={data.data.agentTopology} />
+          </TabsContent>
+
           <TabsContent value="metrics">
             <MetricsCharts metrics={data.data.metrics} />
           </TabsContent>
 
-          {/* Traces Tab */}
           <TabsContent value="traces">
             <TracesPanel traces={data.data.traces} />
           </TabsContent>
 
-          {/* Logs Tab */}
+          <TabsContent value="imperatives">
+            <ImperativeRegistryPanel imperatives={data.data.imperativeRegistry} />
+          </TabsContent>
+
+          <TabsContent value="violations">
+            <ViolationsPanel violations={data.data.violations} />
+          </TabsContent>
+
           <TabsContent value="logs">
             <LogsPanel logs={data.data.logs} />
           </TabsContent>
 
-          {/* Alerts Tab */}
           <TabsContent value="alerts">
             <AlertsPanel
               rules={data.data.alerting.rules}
@@ -319,94 +303,16 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Autonomous Compliance — Observability Infrastructure</span>
+            <span>Autonomous Regulatory Compliance Agent Swarm — Observability</span>
             <Separator orientation="vertical" className="h-3" />
-            <span>Data generated: {new Date(data.generatedAt).toLocaleString()} UTC</span>
+            <span>{data.specification}</span>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[10px]">{data.version}</Badge>
-            <span>Next.js + Recharts + shadcn/ui</span>
+            <span>Generated: {new Date(data.generatedAt).toLocaleString()} UTC</span>
           </div>
         </div>
       </footer>
     </div>
   )
 }
-
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-} from 'recharts'
-
-function MetricsQuickChart({
-  title,
-  data,
-  unit,
-  color,
-  threshold,
-}: {
-  title: string
-  data: { timestamp: string; value: number }[]
-  unit: string
-  color: string
-  threshold?: number
-}) {
-  const chartData = data.map((d) => ({
-    ...d,
-    time: new Date(d.timestamp).toLocaleTimeString('en-US', {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-  }))
-  const latest = data[data.length - 1]?.value ?? 0
-  const isOverThreshold = threshold !== undefined && latest > threshold
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">{title}</span>
-          <span className={`text-lg font-bold ${isOverThreshold ? 'text-red-500' : ''}`}>
-            {Math.round(latest * 10) / 10}
-            <span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span>
-          </span>
-        </div>
-        <div className="h-[120px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id={`quick-${title}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="time" hide />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                }}
-                formatter={(value: number) => [`${value} ${unit}`, title]}
-              />
-              {threshold !== undefined && (
-                <Line type="monotone" dataKey={() => threshold} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1} dot={false} />
-              )}
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke={color}
-                fill={`url(#quick-${title})`}
-                strokeWidth={1.5}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-import { Line } from 'recharts'

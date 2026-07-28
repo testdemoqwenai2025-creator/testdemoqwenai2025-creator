@@ -1,0 +1,843 @@
+{
+  "run_id": "70791dedf795",
+  "start_time": "2026-07-28T13:20:45.860820",
+  "components": {
+    "21": {
+      "component": 21,
+      "name": "Synthetic Data Generation Engine",
+      "event": "SYNTHETIC_GEN",
+      "patients_generated": 8,
+      "conditions_represented": [
+        "Atrial Fibrillation",
+        "Depression",
+        "Asthma",
+        "Chronic Kidney Disease",
+        "Hypertension"
+      ],
+      "fidelity_level": "high"
+    },
+    "1": {
+      "component": 1,
+      "name": "Identity & Access Management",
+      "event": "IAM_CHECK",
+      "user_role": "Clinician",
+      "resource": "AI_Model_API",
+      "purpose": "treatment",
+      "authorized": true,
+      "reason": "Role matched"
+    },
+    "1b": {
+      "component": 1,
+      "name": "Identity & Access Management",
+      "event": "IAM_CHECK",
+      "user_role": "Researcher",
+      "resource": "EHR_API",
+      "purpose": "research",
+      "authorized": false,
+      "reason": "Role Researcher not authorized for EHR_API"
+    },
+    "6": {
+      "component": 6,
+      "name": "Consent Management & Preference Store",
+      "event": "CONSENT_RECORD",
+      "consent_id": "CON-2080B6DE",
+      "patient_id": "SYN-PAT001",
+      "type": "PHI_Access",
+      "granted": true,
+      "purpose": "treatment",
+      "recorded_at": "2026-07-28T13:20:45.861088",
+      "expires_at": "2027-07-28T13:20:45.861088",
+      "revocable": true
+    },
+    "6b": {
+      "component": 6,
+      "name": "Consent Management & Preference Store",
+      "event": "CONSENT_CHECK",
+      "patient_id": "SYN-PAT001",
+      "action": "read_phi",
+      "valid": true
+    },
+    "8": {
+      "component": 8,
+      "name": "Data Classification & Sensitivity Labeller",
+      "event": "CLASSIFY",
+      "labels_assigned": [
+        "PHI"
+      ],
+      "sensitivity_score": 3,
+      "max_possible": 9,
+      "risk_level": "High"
+    },
+    "3": {
+      "component": 3,
+      "name": "Encryption at Rest / In-Transit (KMS)",
+      "event": "ENCRYPT",
+      "algorithm": "AES-256-GCM",
+      "key_name": "data_enc",
+      "key_id": "KID-DATA_ENC-d33d3437",
+      "iv_truncated": "8fe4cede1f6847f6",
+      "ciphertext_preview": "bb14f8be79797f263b5e6dd60e918baf..."
+    },
+    "5": {
+      "component": 5,
+      "name": "Tokenization Engine (FHIR)",
+      "event": "TOKENIZE",
+      "tokens_generated": 3,
+      "fhir_compatible": true,
+      "reversibility": "authorized_reversal_only"
+    },
+    "4": {
+      "component": 4,
+      "name": "Dynamic Data Masking (Safe Harbor)",
+      "event": "DATA_MASKING",
+      "method": "Safe Harbor De-identification",
+      "fields_masked": [
+        "John Doe",
+        "Jane Smith",
+        "1985-05-12",
+        "MRN-12345",
+        "555-123-4567"
+      ],
+      "fields_count": 5,
+      "remaining_risk": "low"
+    },
+    "16a": {
+      "component": 16,
+      "name": "Prompt Inspection & Firewall Gatekeeper",
+      "event": "PROMPT_INSPECT",
+      "patterns_checked": 7,
+      "injection_found": false,
+      "pii_masked": 1,
+      "status": "passed"
+    },
+    "16b": {
+      "component": 16,
+      "name": "Prompt Inspection & Firewall Gatekeeper",
+      "event": "SECURITY_BLOCK",
+      "reason": "Adversarial Intent Detected",
+      "matched_pattern": "ignore previous instructions",
+      "status": "blocked"
+    },
+    "15": {
+      "component": 15,
+      "name": "API Rate Limiter & Abuse Shield",
+      "event": "RATE_LIMIT_CHECK",
+      "user_id": "user_clinician_01",
+      "requests": 7,
+      "limit": 10,
+      "status": "allowed",
+      "burst_remaining": 5
+    },
+    "15b": {
+      "component": 15,
+      "name": "API Rate Limiter & Abuse Shield",
+      "event": "RATE_LIMIT_CHECK",
+      "user_id": "user_bot_suspicious",
+      "requests": 15,
+      "limit": 10,
+      "status": "rate_limited",
+      "burst_remaining": 0
+    },
+    "14": {
+      "component": 14,
+      "name": "Multi-Tenancy Isolation Layer",
+      "event": "TENANT_ISOLATION_CHECK",
+      "tenant_id": "tenant_a",
+      "data_key": "tk_a_001",
+      "subnet": "10.0.1.0/24",
+      "resource": "patient_records",
+      "isolated": true
+    },
+    "9a": {
+      "component": 9,
+      "name": "Boundary Guard (Data Residency / Geo-Fencing)",
+      "event": "GEO_CHECK",
+      "destination": "US",
+      "data_class": "PHI",
+      "allowed": true,
+      "action": "allowed"
+    },
+    "9b": {
+      "component": 9,
+      "name": "Boundary Guard (Data Residency / Geo-Fencing)",
+      "event": "GEO_CHECK",
+      "destination": "EU",
+      "data_class": "PHI",
+      "allowed": false,
+      "action": "GDPR_review_required"
+    },
+    "9c": {
+      "component": 9,
+      "name": "Boundary Guard (Data Residency / Geo-Fencing)",
+      "event": "GEO_CHECK",
+      "destination": "CN",
+      "data_class": "PHI",
+      "allowed": false,
+      "action": "blocked"
+    },
+    "7a": {
+      "component": 7,
+      "name": "Retention Policy Enforcer",
+      "event": "RETENTION_CHECK",
+      "data_category": "PHI",
+      "age_days": 2751,
+      "max_age_days": 2190,
+      "utilization_pct": 125.6,
+      "status": "expired",
+      "action_taken": "archive_then_delete"
+    },
+    "7b": {
+      "component": 7,
+      "name": "Retention Policy Enforcer",
+      "event": "RETENTION_CHECK",
+      "data_category": "PHI",
+      "age_days": 787,
+      "max_age_days": 2190,
+      "utilization_pct": 35.9,
+      "status": "active",
+      "action_taken": "none"
+    },
+    "13a": {
+      "component": 13,
+      "name": "Policy-as-Code Engine (OPA/Rego)",
+      "event": "POLICY_EVAL",
+      "policy": "clinician_access_phi",
+      "rule": "allow if role == Clinician AND purpose == treatment",
+      "context": {
+        "role": "Clinician",
+        "purpose": "treatment"
+      },
+      "decision": "allow",
+      "engine": "OPA/Rego"
+    },
+    "13b": {
+      "component": 13,
+      "name": "Policy-as-Code Engine (OPA/Rego)",
+      "event": "POLICY_EVAL",
+      "policy": "researcher_access_deidentified",
+      "rule": "allow if role == Researcher AND data_class == deidentified",
+      "context": {
+        "role": "Researcher",
+        "data_class": "deidentified"
+      },
+      "decision": "allow",
+      "engine": "OPA/Rego"
+    },
+    "10a": {
+      "component": 10,
+      "name": "Anomaly Detection & Breach Alert System",
+      "event": "ANOMALY_CHECK",
+      "metric": "failed_logins_per_hour",
+      "value": 3,
+      "threshold": 5,
+      "unit": "",
+      "is_anomaly": false,
+      "severity": "normal"
+    },
+    "10b": {
+      "component": 10,
+      "name": "Anomaly Detection & Breach Alert System",
+      "event": "ANOMALY_CHECK",
+      "metric": "phi_access_anomalies",
+      "value": 18,
+      "threshold": 10,
+      "unit": "",
+      "is_anomaly": true,
+      "severity": "critical"
+    },
+    "17a": {
+      "component": 17,
+      "name": "Context Window Budget Manager",
+      "event": "BUDGET_CHECK",
+      "prompt_tokens": 800,
+      "response_tokens": 1200,
+      "total_used": 2000,
+      "max_budget": 4096,
+      "utilization_pct": 48.8,
+      "remaining": 1584,
+      "truncation_needed": false
+    },
+    "17b": {
+      "component": 17,
+      "name": "Context Window Budget Manager",
+      "event": "BUDGET_CHECK",
+      "prompt_tokens": 1500,
+      "response_tokens": 500,
+      "total_used": 4000,
+      "max_budget": 4096,
+      "utilization_pct": 97.7,
+      "remaining": 0,
+      "truncation_needed": true
+    },
+    "18a": {
+      "component": 18,
+      "name": "Non-Deterministic Output Validator",
+      "event": "OUTPUT_VALIDATION",
+      "valid": false,
+      "issues_found": 1,
+      "issues": [
+        "Hallucinated dosage: 1000mg not found in source EHR"
+      ],
+      "severity": "warning"
+    },
+    "18b": {
+      "component": 18,
+      "name": "Non-Deterministic Output Validator",
+      "event": "OUTPUT_VALIDATION",
+      "valid": true,
+      "issues_found": 0,
+      "issues": [],
+      "severity": "pass"
+    },
+    "19": {
+      "component": 19,
+      "name": "Human-in-the-Loop Escalation Gate",
+      "event": "ESCALATION",
+      "escalation_id": "ESC-DAA090",
+      "reason": "AI hallucination detected in clinical dosage recommendation",
+      "priority": "high",
+      "context": {
+        "patient": "SYN-A",
+        "component": "Output_Validator",
+        "severity": "high"
+      },
+      "status": "pending_review",
+      "created_at": "2026-07-28T13:20:45.862837",
+      "assigned_to": "Compliance_Officer_Auto"
+    },
+    "19b": {
+      "component": 19,
+      "name": "Human-in-the-Loop Escalation Gate",
+      "event": "ESCALATION_RESOLVE",
+      "escalation_id": "ESC-DAA090",
+      "decision": "approved_with_correction"
+    },
+    "20a": {
+      "component": 20,
+      "name": "Explainability & Provenance Tracker",
+      "event": "PROVENANCE",
+      "step_id": "PRV-0001",
+      "action": "data_ingestion",
+      "agent": "Ingestion_Agent",
+      "input_hash": "b933f6dbcf2c0cee",
+      "output_hash": "4d0c3606810ce1ef",
+      "timestamp": "2026-07-28T13:20:45.862887",
+      "model_version": "orchestrator-v1.0-sim"
+    },
+    "20b": {
+      "component": 20,
+      "name": "Explainability & Provenance Tracker",
+      "event": "PROVENANCE",
+      "step_id": "PRV-0002",
+      "action": "legal_analysis",
+      "agent": "Legal_Analyst_Agent",
+      "input_hash": "e170d7d8863d1005",
+      "output_hash": "3578cc8acfbd9cff",
+      "timestamp": "2026-07-28T13:20:45.862913",
+      "model_version": "orchestrator-v1.0-sim"
+    },
+    "20c": {
+      "component": 20,
+      "name": "Explainability & Provenance Tracker",
+      "event": "PROVENANCE",
+      "step_id": "PRV-0003",
+      "action": "output_validation",
+      "agent": "Output_Validator",
+      "input_hash": "06333bf94ddf09e7",
+      "output_hash": "f1218d2fa48e1787",
+      "timestamp": "2026-07-28T13:20:45.862931",
+      "model_version": "orchestrator-v1.0-sim"
+    },
+    "12a": {
+      "component": 12,
+      "name": "Regulatory Change Ingestion & Versioning",
+      "event": "REG_CHANGE_INGEST",
+      "version_id": "REG-0C5BA8",
+      "source": "HHS/OCR",
+      "title": "HIPAA Privacy Rule Update - 2025 Amendment",
+      "severity": "high",
+      "ingested_at": "2026-07-28T13:20:45.862950",
+      "status": "pending_review",
+      "impact_assessment": "not_started"
+    },
+    "12b": {
+      "component": 12,
+      "name": "Regulatory Change Ingestion & Versioning",
+      "event": "REG_CHANGE_INGEST",
+      "version_id": "REG-B99A68",
+      "source": "ONC",
+      "title": "21st Century Cures Act Interoperability Rule v3",
+      "severity": "medium",
+      "ingested_at": "2026-07-28T13:20:45.862971",
+      "status": "pending_review",
+      "impact_assessment": "not_started"
+    },
+    "22a": {
+      "component": 22,
+      "name": "Disaster Recovery & State Rehydrator",
+      "event": "SNAPSHOT_CREATE",
+      "snapshot_id": "SNP-B169CAEE",
+      "reason": "post_orchestration",
+      "created_at": "2026-07-28T13:20:45.862988",
+      "audit_log_entries": 36,
+      "consent_records": 1,
+      "provenance_steps": 3,
+      "escalations_pending": 0,
+      "regulatory_versions": 2,
+      "state_hash": "5e79410aeccc5859"
+    },
+    "22b": {
+      "component": 22,
+      "name": "Disaster Recovery & State Rehydrator",
+      "event": "STATE_REHYDRATE",
+      "snapshot_id": "SNP-B169CAEE",
+      "restored_audit_entries": 36,
+      "state_hash_verified": true,
+      "status": "success"
+    },
+    "11": {
+      "component": 11,
+      "name": "Automated Compliance Reporting (OCR/ONC)",
+      "event": "COMPLIANCE_REPORT",
+      "report_id": "RPT-8E450EC3",
+      "period": "Q4-2025",
+      "generated_at": "2026-07-28T13:20:45.863030",
+      "framework": "HIPAA / HITECH",
+      "summary": {
+        "total_audit_entries": 38,
+        "access_requests": 2,
+        "encryption_ops": 1,
+        "masking_ops": 3,
+        "anomalies_detected": 1,
+        "escalations": 1
+      },
+      "hipaa_safeguards": {
+        "administrative": {
+          "status": "active",
+          "policies_enforced": 8
+        },
+        "physical": {
+          "status": "active",
+          "controls_verified": 5
+        },
+        "technical": {
+          "status": "active",
+          "controls_active": 9
+        }
+      },
+      "risk_posture": "ELEVATED_RISK"
+    },
+    "2": {
+      "component": 2,
+      "name": "Immutable Audit Logging Engine",
+      "event": "AUDIT_SUMMARY",
+      "total_entries": 39,
+      "chain_integrity": "verified",
+      "genesis_hash": "0115c41aaff6aa67",
+      "final_hash": "f45557e59ec53ae9"
+    }
+  },
+  "audit_trail": [
+    {
+      "seq": 1,
+      "timestamp": "2026-07-28T13:20:45.861004",
+      "event_type": "SYNTHETIC_GEN",
+      "details": "{\"event\": \"SYNTHETIC_GEN\", \"patients_generated\": 8, \"conditions_represented\": [\"Atrial Fibrillation\", \"Depression\", \"Ast..."
+    },
+    {
+      "seq": 2,
+      "timestamp": "2026-07-28T13:20:45.861050",
+      "event_type": "IAM_CHECK",
+      "details": "{\"event\": \"IAM_CHECK\", \"user_role\": \"Clinician\", \"resource\": \"AI_Model_API\", \"purpose\": \"treatment\", \"authorized\": true,..."
+    },
+    {
+      "seq": 3,
+      "timestamp": "2026-07-28T13:20:45.861073",
+      "event_type": "IAM_CHECK",
+      "details": "{\"event\": \"IAM_CHECK\", \"user_role\": \"Researcher\", \"resource\": \"EHR_API\", \"purpose\": \"research\", \"authorized\": false, \"re..."
+    },
+    {
+      "seq": 4,
+      "timestamp": "2026-07-28T13:20:45.861129",
+      "event_type": "CONSENT_RECORD",
+      "details": "{\"event\": \"CONSENT_RECORD\", \"consent_id\": \"CON-2080B6DE\", \"patient_id\": \"SYN-PAT001\", \"type\": \"PHI_Access\", \"granted\": t..."
+    },
+    {
+      "seq": 5,
+      "timestamp": "2026-07-28T13:20:45.861150",
+      "event_type": "CONSENT_CHECK",
+      "details": "{\"event\": \"CONSENT_CHECK\", \"patient_id\": \"SYN-PAT001\", \"action\": \"read_phi\", \"valid\": true}"
+    },
+    {
+      "seq": 6,
+      "timestamp": "2026-07-28T13:20:45.862305",
+      "event_type": "CLASSIFY",
+      "details": "{\"event\": \"CLASSIFY\", \"labels_assigned\": [\"PHI\"], \"sensitivity_score\": 3, \"max_possible\": 9, \"risk_level\": \"High\"}"
+    },
+    {
+      "seq": 7,
+      "timestamp": "2026-07-28T13:20:45.862392",
+      "event_type": "ENCRYPT",
+      "details": "{\"event\": \"ENCRYPT\", \"algorithm\": \"AES-256-GCM\", \"key_name\": \"data_enc\", \"key_id\": \"KID-DATA_ENC-d33d3437\", \"iv_truncate..."
+    },
+    {
+      "seq": 8,
+      "timestamp": "2026-07-28T13:20:45.862442",
+      "event_type": "TOKENIZE",
+      "details": "{\"event\": \"TOKENIZE\", \"tokens_generated\": 3, \"fhir_compatible\": true, \"reversibility\": \"authorized_reversal_only\"}"
+    },
+    {
+      "seq": 9,
+      "timestamp": "2026-07-28T13:20:45.862468",
+      "event_type": "DATA_MASKING",
+      "details": "{\"event\": \"DATA_MASKING\", \"method\": \"Safe Harbor De-identification\", \"fields_masked\": [\"John Doe\", \"Jane Smith\", \"1985-0..."
+    },
+    {
+      "seq": 10,
+      "timestamp": "2026-07-28T13:20:45.862494",
+      "event_type": "DATA_MASKING",
+      "details": "{\"event\": \"DATA_MASKING\", \"method\": \"Safe Harbor De-identification\", \"fields_masked\": [\"MRN-12345\"], \"fields_count\": 1, ..."
+    },
+    {
+      "seq": 11,
+      "timestamp": "2026-07-28T13:20:45.862501",
+      "event_type": "PROMPT_INSPECT",
+      "details": "{\"event\": \"PROMPT_INSPECT\", \"patterns_checked\": 7, \"injection_found\": false, \"pii_masked\": 1, \"status\": \"passed\"}"
+    },
+    {
+      "seq": 12,
+      "timestamp": "2026-07-28T13:20:45.862518",
+      "event_type": "DATA_MASKING",
+      "details": "{\"event\": \"DATA_MASKING\", \"method\": \"Safe Harbor De-identification\", \"fields_masked\": [\"John Doe\"], \"fields_count\": 1, \"..."
+    },
+    {
+      "seq": 13,
+      "timestamp": "2026-07-28T13:20:45.862525",
+      "event_type": "SECURITY_BLOCK",
+      "details": "{\"event\": \"SECURITY_BLOCK\", \"reason\": \"Adversarial Intent Detected\", \"matched_pattern\": \"ignore previous instructions\", ..."
+    },
+    {
+      "seq": 14,
+      "timestamp": "2026-07-28T13:20:45.862542",
+      "event_type": "RATE_LIMIT_CHECK",
+      "details": "{\"event\": \"RATE_LIMIT_CHECK\", \"user_id\": \"user_clinician_01\", \"requests\": 7, \"limit\": 10, \"status\": \"allowed\", \"burst_re..."
+    },
+    {
+      "seq": 15,
+      "timestamp": "2026-07-28T13:20:45.862576",
+      "event_type": "RATE_LIMIT_CHECK",
+      "details": "{\"event\": \"RATE_LIMIT_CHECK\", \"user_id\": \"user_bot_suspicious\", \"requests\": 15, \"limit\": 10, \"status\": \"rate_limited\", \"..."
+    },
+    {
+      "seq": 16,
+      "timestamp": "2026-07-28T13:20:45.862593",
+      "event_type": "TENANT_ISOLATION_CHECK",
+      "details": "{\"event\": \"TENANT_ISOLATION_CHECK\", \"tenant_id\": \"tenant_a\", \"data_key\": \"tk_a_001\", \"subnet\": \"10.0.1.0/24\", \"resource\"..."
+    },
+    {
+      "seq": 17,
+      "timestamp": "2026-07-28T13:20:45.862608",
+      "event_type": "GEO_CHECK",
+      "details": "{\"event\": \"GEO_CHECK\", \"destination\": \"US\", \"data_class\": \"PHI\", \"allowed\": true, \"action\": \"allowed\"}"
+    },
+    {
+      "seq": 18,
+      "timestamp": "2026-07-28T13:20:45.862618",
+      "event_type": "GEO_CHECK",
+      "details": "{\"event\": \"GEO_CHECK\", \"destination\": \"EU\", \"data_class\": \"PHI\", \"allowed\": false, \"action\": \"GDPR_review_required\"}"
+    },
+    {
+      "seq": 19,
+      "timestamp": "2026-07-28T13:20:45.862629",
+      "event_type": "GEO_CHECK",
+      "details": "{\"event\": \"GEO_CHECK\", \"destination\": \"CN\", \"data_class\": \"PHI\", \"allowed\": false, \"action\": \"blocked\"}"
+    },
+    {
+      "seq": 20,
+      "timestamp": "2026-07-28T13:20:45.862658",
+      "event_type": "RETENTION_CHECK",
+      "details": "{\"event\": \"RETENTION_CHECK\", \"data_category\": \"PHI\", \"age_days\": 2751, \"max_age_days\": 2190, \"utilization_pct\": 125.6, \"..."
+    },
+    {
+      "seq": 21,
+      "timestamp": "2026-07-28T13:20:45.862673",
+      "event_type": "RETENTION_CHECK",
+      "details": "{\"event\": \"RETENTION_CHECK\", \"data_category\": \"PHI\", \"age_days\": 787, \"max_age_days\": 2190, \"utilization_pct\": 35.9, \"st..."
+    },
+    {
+      "seq": 22,
+      "timestamp": "2026-07-28T13:20:45.862693",
+      "event_type": "POLICY_EVAL",
+      "details": "{\"event\": \"POLICY_EVAL\", \"policy\": \"clinician_access_phi\", \"rule\": \"allow if role == Clinician AND purpose == treatment\"..."
+    },
+    {
+      "seq": 23,
+      "timestamp": "2026-07-28T13:20:45.862704",
+      "event_type": "POLICY_EVAL",
+      "details": "{\"event\": \"POLICY_EVAL\", \"policy\": \"researcher_access_deidentified\", \"rule\": \"allow if role == Researcher AND data_class..."
+    },
+    {
+      "seq": 24,
+      "timestamp": "2026-07-28T13:20:45.862720",
+      "event_type": "ANOMALY_CHECK",
+      "details": "{\"event\": \"ANOMALY_CHECK\", \"metric\": \"failed_logins_per_hour\", \"value\": 3, \"threshold\": 5, \"unit\": \"\", \"is_anomaly\": fal..."
+    },
+    {
+      "seq": 25,
+      "timestamp": "2026-07-28T13:20:45.862741",
+      "event_type": "ANOMALY_CHECK",
+      "details": "{\"event\": \"ANOMALY_CHECK\", \"metric\": \"phi_access_anomalies\", \"value\": 18, \"threshold\": 10, \"unit\": \"\", \"is_anomaly\": tru..."
+    },
+    {
+      "seq": 26,
+      "timestamp": "2026-07-28T13:20:45.862762",
+      "event_type": "BUDGET_CHECK",
+      "details": "{\"event\": \"BUDGET_CHECK\", \"prompt_tokens\": 800, \"response_tokens\": 1200, \"total_used\": 2000, \"max_budget\": 4096, \"utiliz..."
+    },
+    {
+      "seq": 27,
+      "timestamp": "2026-07-28T13:20:45.862775",
+      "event_type": "BUDGET_CHECK",
+      "details": "{\"event\": \"BUDGET_CHECK\", \"prompt_tokens\": 1500, \"response_tokens\": 500, \"total_used\": 4000, \"max_budget\": 4096, \"utiliz..."
+    },
+    {
+      "seq": 28,
+      "timestamp": "2026-07-28T13:20:45.862811",
+      "event_type": "OUTPUT_VALIDATION",
+      "details": "{\"event\": \"OUTPUT_VALIDATION\", \"valid\": false, \"issues_found\": 1, \"issues\": [\"Hallucinated dosage: 1000mg not found in s..."
+    },
+    {
+      "seq": 29,
+      "timestamp": "2026-07-28T13:20:45.862824",
+      "event_type": "OUTPUT_VALIDATION",
+      "details": "{\"event\": \"OUTPUT_VALIDATION\", \"valid\": true, \"issues_found\": 0, \"issues\": [], \"severity\": \"pass\"}"
+    },
+    {
+      "seq": 30,
+      "timestamp": "2026-07-28T13:20:45.862849",
+      "event_type": "ESCALATION",
+      "details": "{\"event\": \"ESCALATION\", \"escalation_id\": \"ESC-DAA090\", \"reason\": \"AI hallucination detected in clinical dosage recommend..."
+    },
+    {
+      "seq": 31,
+      "timestamp": "2026-07-28T13:20:45.862865",
+      "event_type": "ESCALATION_RESOLVE",
+      "details": "{\"event\": \"ESCALATION_RESOLVE\", \"escalation_id\": \"ESC-DAA090\", \"decision\": \"approved_with_correction\"}"
+    },
+    {
+      "seq": 32,
+      "timestamp": "2026-07-28T13:20:45.862894",
+      "event_type": "PROVENANCE",
+      "details": "{\"event\": \"PROVENANCE\", \"step_id\": \"PRV-0001\", \"action\": \"data_ingestion\", \"agent\": \"Ingestion_Agent\", \"input_hash\": \"b9..."
+    },
+    {
+      "seq": 33,
+      "timestamp": "2026-07-28T13:20:45.862919",
+      "event_type": "PROVENANCE",
+      "details": "{\"event\": \"PROVENANCE\", \"step_id\": \"PRV-0002\", \"action\": \"legal_analysis\", \"agent\": \"Legal_Analyst_Agent\", \"input_hash\":..."
+    },
+    {
+      "seq": 34,
+      "timestamp": "2026-07-28T13:20:45.862936",
+      "event_type": "PROVENANCE",
+      "details": "{\"event\": \"PROVENANCE\", \"step_id\": \"PRV-0003\", \"action\": \"output_validation\", \"agent\": \"Output_Validator\", \"input_hash\":..."
+    },
+    {
+      "seq": 35,
+      "timestamp": "2026-07-28T13:20:45.862961",
+      "event_type": "REG_CHANGE_INGEST",
+      "details": "{\"event\": \"REG_CHANGE_INGEST\", \"version_id\": \"REG-0C5BA8\", \"source\": \"HHS/OCR\", \"title\": \"HIPAA Privacy Rule Update - 20..."
+    },
+    {
+      "seq": 36,
+      "timestamp": "2026-07-28T13:20:45.862977",
+      "event_type": "REG_CHANGE_INGEST",
+      "details": "{\"event\": \"REG_CHANGE_INGEST\", \"version_id\": \"REG-B99A68\", \"source\": \"ONC\", \"title\": \"21st Century Cures Act Interoperab..."
+    },
+    {
+      "seq": 37,
+      "timestamp": "2026-07-28T13:20:45.863002",
+      "event_type": "SNAPSHOT_CREATE",
+      "details": "{\"event\": \"SNAPSHOT_CREATE\", \"snapshot_id\": \"SNP-B169CAEE\", \"reason\": \"post_orchestration\", \"created_at\": \"2026-07-28T13..."
+    },
+    {
+      "seq": 38,
+      "timestamp": "2026-07-28T13:20:45.863019",
+      "event_type": "STATE_REHYDRATE",
+      "details": "{\"event\": \"STATE_REHYDRATE\", \"snapshot_id\": \"SNP-B169CAEE\", \"restored_audit_entries\": 36, \"state_hash_verified\": true, \"..."
+    },
+    {
+      "seq": 39,
+      "timestamp": "2026-07-28T13:20:45.863062",
+      "event_type": "COMPLIANCE_REPORT",
+      "details": "{\"event\": \"COMPLIANCE_REPORT\", \"report_id\": \"RPT-8E450EC3\", \"period\": \"Q4-2025\", \"generated_at\": \"2026-07-28T13:20:45.86..."
+    }
+  ],
+  "escalation_events": [
+    {
+      "escalation_id": "ESC-DAA090",
+      "reason": "AI hallucination detected in clinical dosage recommendation",
+      "priority": "high",
+      "context": {
+        "patient": "SYN-A",
+        "component": "Output_Validator",
+        "severity": "high"
+      },
+      "status": "resolved_approved_with_correction",
+      "created_at": "2026-07-28T13:20:45.862837",
+      "assigned_to": "Compliance_Officer_Auto",
+      "resolved_at": "2026-07-28T13:20:45.862861"
+    }
+  ],
+  "breach_alerts": [
+    {
+      "alert_id": "ALR-5B387E",
+      "metric": "phi_access_anomalies",
+      "value": 18,
+      "threshold": 10,
+      "severity": "critical",
+      "timestamp": "2026-07-28T13:20:45.862731"
+    }
+  ],
+  "provenance_chain": [
+    {
+      "step_id": "PRV-0001",
+      "action": "data_ingestion",
+      "agent": "Ingestion_Agent",
+      "input_hash": "b933f6dbcf2c0cee",
+      "output_hash": "4d0c3606810ce1ef",
+      "timestamp": "2026-07-28T13:20:45.862887",
+      "model_version": "orchestrator-v1.0-sim"
+    },
+    {
+      "step_id": "PRV-0002",
+      "action": "legal_analysis",
+      "agent": "Legal_Analyst_Agent",
+      "input_hash": "e170d7d8863d1005",
+      "output_hash": "3578cc8acfbd9cff",
+      "timestamp": "2026-07-28T13:20:45.862913",
+      "model_version": "orchestrator-v1.0-sim"
+    },
+    {
+      "step_id": "PRV-0003",
+      "action": "output_validation",
+      "agent": "Output_Validator",
+      "input_hash": "06333bf94ddf09e7",
+      "output_hash": "f1218d2fa48e1787",
+      "timestamp": "2026-07-28T13:20:45.862931",
+      "model_version": "orchestrator-v1.0-sim"
+    }
+  ],
+  "synthetic_patients": [
+    {
+      "name": "Synthetic_A",
+      "mrn": "SYN-4FC2E2",
+      "dob": "1993-06-26",
+      "condition": "Asthma",
+      "medication": "Aspirin 81mg",
+      "last_visit": "2026-06-26",
+      "risk_score": 0.9,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_B",
+      "mrn": "SYN-BBD0CF",
+      "dob": "1967-06-12",
+      "condition": "Chronic Kidney Disease",
+      "medication": "Aspirin 81mg",
+      "last_visit": "2026-05-31",
+      "risk_score": 0.52,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_C",
+      "mrn": "SYN-79DCA6",
+      "dob": "1979-01-12",
+      "condition": "Hypertension",
+      "medication": "Amlodipine 5mg",
+      "last_visit": "2026-05-04",
+      "risk_score": 0.56,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_D",
+      "mrn": "SYN-A2DD85",
+      "dob": "1987-07-10",
+      "condition": "Hypertension",
+      "medication": "Losartan 50mg",
+      "last_visit": "2026-07-15",
+      "risk_score": 0.83,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_E",
+      "mrn": "SYN-B58D0C",
+      "dob": "1984-05-26",
+      "condition": "Atrial Fibrillation",
+      "medication": "Apixaban 5mg",
+      "last_visit": "2026-07-02",
+      "risk_score": 0.93,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_F",
+      "mrn": "SYN-510F9F",
+      "dob": "1990-11-03",
+      "condition": "Depression",
+      "medication": "Aspirin 81mg",
+      "last_visit": "2026-06-26",
+      "risk_score": 0.82,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_G",
+      "mrn": "SYN-43A73C",
+      "dob": "1960-07-08",
+      "condition": "Chronic Kidney Disease",
+      "medication": "Aspirin 81mg",
+      "last_visit": "2026-07-21",
+      "risk_score": 0.14,
+      "synthetic": true
+    },
+    {
+      "name": "Synthetic_H",
+      "mrn": "SYN-9C7EF0",
+      "dob": "1977-01-15",
+      "condition": "Chronic Kidney Disease",
+      "medication": "Aspirin 81mg",
+      "last_visit": "2026-05-03",
+      "risk_score": 0.5,
+      "synthetic": true
+    }
+  ],
+  "compliance_report": {
+    "report_id": "RPT-8E450EC3",
+    "period": "Q4-2025",
+    "generated_at": "2026-07-28T13:20:45.863030",
+    "framework": "HIPAA / HITECH",
+    "summary": {
+      "total_audit_entries": 38,
+      "access_requests": 2,
+      "encryption_ops": 1,
+      "masking_ops": 3,
+      "anomalies_detected": 1,
+      "escalations": 1
+    },
+    "hipaa_safeguards": {
+      "administrative": {
+        "status": "active",
+        "policies_enforced": 8
+      },
+      "physical": {
+        "status": "active",
+        "controls_verified": 5
+      },
+      "technical": {
+        "status": "active",
+        "controls_active": 9
+      }
+    },
+    "risk_posture": "ELEVATED_RISK"
+  },
+  "end_time": "2026-07-28T13:20:45.863120"
+}

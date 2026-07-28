@@ -1,0 +1,1196 @@
+{
+  "run_id": "abb6b5d13c6b",
+  "start_time": "2026-07-28T13:42:35.825613",
+  "end_time": "2026-07-28T13:42:35.826697",
+  "agents": {
+    "ingestion": {
+      "name": "Ingestion_Agent",
+      "type": "ingestion",
+      "state": "completed",
+      "processed": 3,
+      "errors": 0,
+      "spans": 3,
+      "messages_sent": 0,
+      "messages_received": 0,
+      "capabilities": [
+        "web_scraping",
+        "document_parsing",
+        "change_detection",
+        "normalization",
+        "schema_validation"
+      ]
+    },
+    "legal_analyst": {
+      "name": "Legal_Analyst_Agent",
+      "type": "legal_analysis",
+      "state": "completed",
+      "processed": 3,
+      "errors": 0,
+      "spans": 3,
+      "messages_sent": 3,
+      "messages_received": 3,
+      "capabilities": [
+        "nlp_analysis",
+        "requirement_extraction",
+        "obligation_mapping",
+        "risk_classification",
+        "cross_reference_analysis"
+      ]
+    },
+    "prosecutor": {
+      "name": "Prosecutor_Agent",
+      "type": "prosecution",
+      "state": "completed",
+      "processed": 3,
+      "errors": 0,
+      "spans": 3,
+      "messages_sent": 3,
+      "messages_received": 3,
+      "capabilities": [
+        "gap_analysis",
+        "risk_assessment",
+        "control_mapping",
+        "evidence_review",
+        "compliance_scoring"
+      ]
+    },
+    "defender": {
+      "name": "Defender_Agent",
+      "type": "defense",
+      "state": "completed",
+      "processed": 3,
+      "errors": 0,
+      "spans": 3,
+      "messages_sent": 1,
+      "messages_received": 3,
+      "capabilities": [
+        "remediation_planning",
+        "control_design",
+        "policy_drafting",
+        "implementation_roadmap",
+        "cost_estimation"
+      ]
+    }
+  },
+  "event_bus": {
+    "total_events": 12,
+    "topic_stats": {
+      "regulatory.changes": {
+        "pending": 0,
+        "consumed": 3,
+        "total": 3
+      },
+      "analysis.results": {
+        "pending": 0,
+        "consumed": 3,
+        "total": 3
+      },
+      "gap.findings": {
+        "pending": 0,
+        "consumed": 3,
+        "total": 3
+      },
+      "remediation.plans": {
+        "pending": 3,
+        "consumed": 0,
+        "total": 3
+      },
+      "governance.audit": {
+        "pending": 0,
+        "consumed": 0,
+        "total": 0
+      },
+      "escalation.requests": {
+        "pending": 0,
+        "consumed": 0,
+        "total": 0
+      }
+    },
+    "metrics": {
+      "published": 12,
+      "consumed": 9,
+      "failed": 0,
+      "total_latency_ms": 0
+    },
+    "consumer_groups": {
+      "legal_analysts": [
+        "Legal_Analyst_Agent"
+      ],
+      "prosecutors": [
+        "Prosecutor_Agent"
+      ],
+      "defenders": [
+        "Defender_Agent"
+      ],
+      "auditors": [
+        "Compliance_Orchestrator"
+      ]
+    }
+  },
+  "traces": [
+    {
+      "span_id": "SPAN-9CF95325",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Ingestion_Agent",
+      "operation": "detect_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.825647",
+      "end_time": "2026-07-28T13:42:35.825691",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "ingestion"
+      }
+    },
+    {
+      "span_id": "SPAN-617FB15C",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Ingestion_Agent",
+      "operation": "detect_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.826030",
+      "end_time": "2026-07-28T13:42:35.826054",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "ingestion"
+      }
+    },
+    {
+      "span_id": "SPAN-69F13BF3",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Ingestion_Agent",
+      "operation": "detect_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.826059",
+      "end_time": "2026-07-28T13:42:35.826074",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "ingestion"
+      }
+    },
+    {
+      "span_id": "SPAN-A39494EA",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Legal_Analyst_Agent",
+      "operation": "analyze_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.825709",
+      "end_time": "2026-07-28T13:42:35.825833",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "legal_analysis"
+      }
+    },
+    {
+      "span_id": "SPAN-42F7A0FE",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Legal_Analyst_Agent",
+      "operation": "analyze_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.826091",
+      "end_time": "2026-07-28T13:42:35.826168",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "legal_analysis"
+      }
+    },
+    {
+      "span_id": "SPAN-56A9CAA0",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Legal_Analyst_Agent",
+      "operation": "analyze_regulatory_change",
+      "start_time": "2026-07-28T13:42:35.826181",
+      "end_time": "2026-07-28T13:42:35.826266",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "legal_analysis"
+      }
+    },
+    {
+      "span_id": "SPAN-3D0A00A6",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Prosecutor_Agent",
+      "operation": "identify_compliance_gaps",
+      "start_time": "2026-07-28T13:42:35.825856",
+      "end_time": "2026-07-28T13:42:35.825906",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "prosecution"
+      }
+    },
+    {
+      "span_id": "SPAN-8521C28D",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Prosecutor_Agent",
+      "operation": "identify_compliance_gaps",
+      "start_time": "2026-07-28T13:42:35.826283",
+      "end_time": "2026-07-28T13:42:35.826323",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "prosecution"
+      }
+    },
+    {
+      "span_id": "SPAN-2586D70C",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Prosecutor_Agent",
+      "operation": "identify_compliance_gaps",
+      "start_time": "2026-07-28T13:42:35.826338",
+      "end_time": "2026-07-28T13:42:35.826388",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "prosecution"
+      }
+    },
+    {
+      "span_id": "SPAN-A5EF616F",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Defender_Agent",
+      "operation": "generate_remediation_plan",
+      "start_time": "2026-07-28T13:42:35.825933",
+      "end_time": "2026-07-28T13:42:35.825985",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "defense"
+      }
+    },
+    {
+      "span_id": "SPAN-CA84823F",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Defender_Agent",
+      "operation": "generate_remediation_plan",
+      "start_time": "2026-07-28T13:42:35.826415",
+      "end_time": "2026-07-28T13:42:35.826539",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "defense"
+      }
+    },
+    {
+      "span_id": "SPAN-957AE26C",
+      "trace_id": "1c7769fa53a94096",
+      "parent_span_id": null,
+      "agent_name": "Defender_Agent",
+      "operation": "generate_remediation_plan",
+      "start_time": "2026-07-28T13:42:35.826570",
+      "end_time": "2026-07-28T13:42:35.826648",
+      "status": "completed",
+      "attributes": {
+        "agent_type": "defense"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "msg_id": "MSG-AE139C1C",
+      "from_agent": "Legal_Analyst_Agent",
+      "to_agent": "Prosecutor_Agent",
+      "msg_type": "analysis_ready",
+      "content": {
+        "analysis_id": "ANL-9BCC1DB4",
+        "event_id": "EVT-3CE09BFD"
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825830",
+      "priority": "normal"
+    },
+    {
+      "msg_id": "MSG-DB5B1EC9",
+      "from_agent": "Legal_Analyst_Agent",
+      "to_agent": "Prosecutor_Agent",
+      "msg_type": "analysis_ready",
+      "content": {
+        "analysis_id": "ANL-F7F380ED",
+        "event_id": "EVT-46352319"
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826166",
+      "priority": "normal"
+    },
+    {
+      "msg_id": "MSG-3060ED7C",
+      "from_agent": "Legal_Analyst_Agent",
+      "to_agent": "Prosecutor_Agent",
+      "msg_type": "analysis_ready",
+      "content": {
+        "analysis_id": "ANL-53E49985",
+        "event_id": "EVT-68ED8E36"
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826264",
+      "priority": "high"
+    },
+    {
+      "msg_id": "MSG-3B8EE78F",
+      "from_agent": "Prosecutor_Agent",
+      "to_agent": "Defender_Agent",
+      "msg_type": "gaps_ready",
+      "content": {
+        "report_id": "GAP-55FD3980",
+        "event_id": "EVT-F3FAD820",
+        "urgent": true
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825903",
+      "priority": "high"
+    },
+    {
+      "msg_id": "MSG-CBF0B8E1",
+      "from_agent": "Prosecutor_Agent",
+      "to_agent": "Defender_Agent",
+      "msg_type": "gaps_ready",
+      "content": {
+        "report_id": "GAP-40133486",
+        "event_id": "EVT-C0BC2F18",
+        "urgent": false
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826321",
+      "priority": "normal"
+    },
+    {
+      "msg_id": "MSG-9B3AEA2C",
+      "from_agent": "Prosecutor_Agent",
+      "to_agent": "Defender_Agent",
+      "msg_type": "gaps_ready",
+      "content": {
+        "report_id": "GAP-52AF9D39",
+        "event_id": "EVT-0C513FA1",
+        "urgent": true
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826386",
+      "priority": "critical"
+    },
+    {
+      "msg_id": "MSG-B249E037",
+      "from_agent": "Defender_Agent",
+      "to_agent": "Compliance_Orchestrator",
+      "msg_type": "escalation_required",
+      "content": {
+        "plan_id": "RMP-0704514F",
+        "critical_gaps": 1,
+        "total_cost": 192112
+      },
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826645",
+      "priority": "critical"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario_name": "HIPAA Privacy Rule \u2014 Patient Access Enhancement",
+      "trace_id": "93c55c2d3d814d82",
+      "started_at": "2026-07-28T13:42:35.825628",
+      "phases": {
+        "ingestion": {
+          "changes_ingested": 1,
+          "events_published": 1
+        },
+        "legal_analysis": {
+          "analyses_completed": 1,
+          "total_requirements": 6,
+          "critical_requirements": 0
+        },
+        "prosecution": {
+          "gap_reports": 1,
+          "total_gaps": 1,
+          "avg_compliance_score": 83.3,
+          "risk_levels": [
+            "HIGH"
+          ]
+        },
+        "defense": {
+          "plans_generated": 1,
+          "total_steps": 1,
+          "total_cost": 64198,
+          "total_effort_days": 35,
+          "escalations": 0
+        }
+      },
+      "ended_at": "2026-07-28T13:42:35.826007",
+      "detailed_results": {
+        "ingestion": [
+          {
+            "raw": {
+              "change_id": "CHG-DDB1F8B4",
+              "source": "Federal Register",
+              "regulation_title": "HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment)",
+              "change_summary": "The Department of Health and Human Services proposes modifications to the HIPAA Privacy Rule to strengthen patients' rights to access their own health information. Key changes include: reduced response time from 30 to 15 days for record requests, mandatory electronic format delivery, expanded definition of electronic health information, and new penalties for non-compliance exceeding $2 million per violation category.",
+              "severity": "high",
+              "affected_sections": [
+                "Section 164.524 (Access)",
+                "Section 164.530 (Compliance)",
+                "Section 1176 (Penalties)"
+              ],
+              "detected_at": "2026-07-28T13:42:35.825656",
+              "raw_text_hash": "0ac8e2630cf4136d",
+              "document_type": "federal_register_notice"
+            },
+            "event_id": "EVT-0E1C77B2"
+          }
+        ],
+        "analyses": [
+          {
+            "analysis": {
+              "analysis_id": "ANL-9BCC1DB4",
+              "source_change_id": "CHG-DDB1F8B4",
+              "regulation": "HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment)",
+              "severity": "high",
+              "requirements": [
+                {
+                  "req_id": "REQ-2DEFC4",
+                  "type": "must_implement",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 1 related to Section 1176 (Penalties)",
+                  "priority": "high",
+                  "source_section": "Section 1176 (Penalties)",
+                  "compliance_deadline": "2026-09-11",
+                  "estimated_effort": "small"
+                },
+                {
+                  "req_id": "REQ-9EA1F0",
+                  "type": "must_restrict_access",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 2 related to Section 1176 (Penalties)",
+                  "priority": "low",
+                  "source_section": "Section 1176 (Penalties)",
+                  "compliance_deadline": "2026-09-28",
+                  "estimated_effort": "large"
+                },
+                {
+                  "req_id": "REQ-EBFB29",
+                  "type": "must_document",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 3 related to Section 164.530 (Compliance)",
+                  "priority": "high",
+                  "source_section": "Section 164.530 (Compliance)",
+                  "compliance_deadline": "2026-09-02",
+                  "estimated_effort": "small"
+                },
+                {
+                  "req_id": "REQ-6DF8F8",
+                  "type": "must_audit",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 4 related to Section 1176 (Penalties)",
+                  "priority": "high",
+                  "source_section": "Section 164.524 (Access)",
+                  "compliance_deadline": "2026-11-19",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-CC85AA",
+                  "type": "must_train",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 5 related to Section 164.524 (Access)",
+                  "priority": "medium",
+                  "source_section": "Section 164.524 (Access)",
+                  "compliance_deadline": "2026-09-30",
+                  "estimated_effort": "large"
+                },
+                {
+                  "req_id": "REQ-C214D5",
+                  "type": "must_implement",
+                  "description": "Requirement extracted from HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment): Obligation 6 related to Section 1176 (Penalties)",
+                  "priority": "high",
+                  "source_section": "Section 1176 (Penalties)",
+                  "compliance_deadline": "2026-11-20",
+                  "estimated_effort": "xlarge"
+                }
+              ],
+              "total_requirements": 6,
+              "critical_count": 0,
+              "analysis_method": "statutory_interpretation",
+              "confidence_score": 0.934,
+              "cross_references": 3,
+              "analyzed_at": "2026-07-28T13:42:35.825814"
+            },
+            "event_id": "EVT-3CE09BFD",
+            "msg_id": "MSG-AE139C1C"
+          }
+        ],
+        "gap_reports": [
+          {
+            "report": {
+              "report_id": "GAP-55FD3980",
+              "source_analysis_id": "ANL-9BCC1DB4",
+              "total_requirements": 6,
+              "gaps_found": 1,
+              "compliance_score": 83.3,
+              "overall_risk_level": "HIGH",
+              "average_risk_score": 0.84,
+              "gaps": [
+                {
+                  "gap_id": "GAP-D77079",
+                  "requirement_id": "REQ-EBFB29",
+                  "requirement_type": "must_document",
+                  "description": "Gap identified: must_document obligation not fully covered by current control 'Minimum Necessary Standard' (missing)",
+                  "severity": "high",
+                  "affected_control": "CTL-008",
+                  "control_status": "missing",
+                  "risk_score": 0.84,
+                  "evidence_status": "missing",
+                  "remediation_complexity": "critical"
+                }
+              ],
+              "risk_breakdown": {
+                "critical": 0,
+                "high": 1,
+                "medium": 0,
+                "low": 0
+              },
+              "prosecuted_at": "2026-07-28T13:42:35.825891"
+            },
+            "event_id": "EVT-F3FAD820",
+            "msg_id": "MSG-3B8EE78F"
+          }
+        ],
+        "remediations": [
+          {
+            "plan": {
+              "plan_id": "RMP-93D80A28",
+              "source_gap_report_id": "GAP-55FD3980",
+              "source_analysis_id": "ANL-9BCC1DB4",
+              "total_gaps_addressed": 1,
+              "total_steps": 1,
+              "total_estimated_cost_usd": 64198,
+              "total_effort_days": 35,
+              "remediation_steps": [
+                {
+                  "step_id": "REM-75A83A",
+                  "gap_id": "GAP-D77079",
+                  "order": 1,
+                  "strategy": "control_enhancement",
+                  "action_description": "Implement control enhancement for gap in must_document affecting control CTL-008",
+                  "assigned_team": "Legal",
+                  "priority": "high",
+                  "effort_days": 35,
+                  "estimated_cost_usd": 64198,
+                  "deadline": "2026-10-06",
+                  "dependencies": [],
+                  "status": "planned",
+                  "verification_method": "compliance_assessment"
+                }
+              ],
+              "risk_reduction_target": 0.588,
+              "compliance_target_score": 96.7,
+              "created_at": "2026-07-28T13:42:35.825976"
+            },
+            "event_id": "EVT-E96BC2F3",
+            "escalation_id": null
+          }
+        ]
+      }
+    },
+    {
+      "scenario_name": "Multi-Regulation Update \u2014 Cures Act + Ransomware Guidance",
+      "trace_id": "db2fcf830e514229",
+      "started_at": "2026-07-28T13:42:35.826016",
+      "phases": {
+        "ingestion": {
+          "changes_ingested": 2,
+          "events_published": 2
+        },
+        "legal_analysis": {
+          "analyses_completed": 2,
+          "total_requirements": 14,
+          "critical_requirements": 1
+        },
+        "prosecution": {
+          "gap_reports": 2,
+          "total_gaps": 4,
+          "avg_compliance_score": 72.9,
+          "risk_levels": [
+            "MODERATE",
+            "CRITICAL"
+          ]
+        },
+        "defense": {
+          "plans_generated": 2,
+          "total_steps": 4,
+          "total_cost": 208610,
+          "total_effort_days": 69,
+          "escalations": 1
+        }
+      },
+      "ended_at": "2026-07-28T13:42:35.826676",
+      "detailed_results": {
+        "ingestion": [
+          {
+            "raw": {
+              "change_id": "CHG-F1F8EE1A",
+              "source": "ONC Standards",
+              "regulation_title": "21st Century Cures Act \u2014 Information Blocking Rule v3.0",
+              "change_summary": "Updated information blocking regulations with new exceptions for privacy-protecting technologies, expanded API requirements for patient-facing applications, and revised anti-information blocking provisions affecting healthcare providers and health IT developers.",
+              "severity": "high",
+              "affected_sections": [
+                "Section 400.200 (Prohibited Practices)",
+                "Section 400.202 (Exceptions)",
+                "Section 400.204 (API Requirements)"
+              ],
+              "detected_at": "2026-07-28T13:42:35.826035",
+              "raw_text_hash": "97f036137f08713e",
+              "document_type": "federal_register_notice"
+            },
+            "event_id": "EVT-8FD66AC6"
+          },
+          {
+            "raw": {
+              "change_id": "CHG-2476E77F",
+              "source": "HHS/OCR Guidance",
+              "regulation_title": "OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update)",
+              "change_summary": "New enforcement guidance addressing ransomware attacks affecting covered entities and business associates. Establishes updated breach notification timelines (now 24 hours for ransomware incidents), mandatory incident response plan requirements, and enhanced safeguard obligations for network segmentation and backup encryption.",
+              "severity": "critical",
+              "affected_sections": [
+                "Section 164.308 (Security Management)",
+                "Section 164.310 (Physical Safeguards)",
+                "Section 164.312 (Technical Safeguards)"
+              ],
+              "detected_at": "2026-07-28T13:42:35.826064",
+              "raw_text_hash": "b2f2d67a6304fc23",
+              "document_type": "federal_register_notice"
+            },
+            "event_id": "EVT-C7A114A6"
+          }
+        ],
+        "analyses": [
+          {
+            "analysis": {
+              "analysis_id": "ANL-F7F380ED",
+              "source_change_id": "CHG-F1F8EE1A",
+              "regulation": "21st Century Cures Act \u2014 Information Blocking Rule v3.0",
+              "severity": "high",
+              "requirements": [
+                {
+                  "req_id": "REQ-B0B0DC",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 1 related to Section 400.202 (Exceptions)",
+                  "priority": "low",
+                  "source_section": "Section 400.202 (Exceptions)",
+                  "compliance_deadline": "2026-11-29",
+                  "estimated_effort": "large"
+                },
+                {
+                  "req_id": "REQ-63891D",
+                  "type": "must_train",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 2 related to Section 400.202 (Exceptions)",
+                  "priority": "low",
+                  "source_section": "Section 400.200 (Prohibited Practices)",
+                  "compliance_deadline": "2027-01-09",
+                  "estimated_effort": "xlarge"
+                },
+                {
+                  "req_id": "REQ-2EEFB2",
+                  "type": "must_encrypt",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 3 related to Section 400.200 (Prohibited Practices)",
+                  "priority": "medium",
+                  "source_section": "Section 400.200 (Prohibited Practices)",
+                  "compliance_deadline": "2026-10-08",
+                  "estimated_effort": "small"
+                },
+                {
+                  "req_id": "REQ-4E82BB",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 4 related to Section 400.204 (API Requirements)",
+                  "priority": "medium",
+                  "source_section": "Section 400.202 (Exceptions)",
+                  "compliance_deadline": "2026-09-10",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-503484",
+                  "type": "must_audit",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 5 related to Section 400.202 (Exceptions)",
+                  "priority": "medium",
+                  "source_section": "Section 400.200 (Prohibited Practices)",
+                  "compliance_deadline": "2026-09-14",
+                  "estimated_effort": "large"
+                },
+                {
+                  "req_id": "REQ-6871EE",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from 21st Century Cures Act \u2014 Information Blocking Rule v3.0: Obligation 6 related to Section 400.202 (Exceptions)",
+                  "priority": "high",
+                  "source_section": "Section 400.204 (API Requirements)",
+                  "compliance_deadline": "2026-11-18",
+                  "estimated_effort": "xlarge"
+                }
+              ],
+              "total_requirements": 6,
+              "critical_count": 0,
+              "analysis_method": "case_law_mapping",
+              "confidence_score": 0.928,
+              "cross_references": 7,
+              "analyzed_at": "2026-07-28T13:42:35.826155"
+            },
+            "event_id": "EVT-46352319",
+            "msg_id": "MSG-DB5B1EC9"
+          },
+          {
+            "analysis": {
+              "analysis_id": "ANL-53E49985",
+              "source_change_id": "CHG-2476E77F",
+              "regulation": "OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update)",
+              "severity": "critical",
+              "requirements": [
+                {
+                  "req_id": "REQ-F22E77",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 1 related to Section 164.312 (Technical Safeguards)",
+                  "priority": "critical",
+                  "source_section": "Section 164.310 (Physical Safeguards)",
+                  "compliance_deadline": "2026-12-20",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-AF2262",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 2 related to Section 164.310 (Physical Safeguards)",
+                  "priority": "low",
+                  "source_section": "Section 164.310 (Physical Safeguards)",
+                  "compliance_deadline": "2026-10-18",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-6F88B8",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 3 related to Section 164.312 (Technical Safeguards)",
+                  "priority": "high",
+                  "source_section": "Section 164.310 (Physical Safeguards)",
+                  "compliance_deadline": "2026-12-27",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-3A981E",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 4 related to Section 164.312 (Technical Safeguards)",
+                  "priority": "medium",
+                  "source_section": "Section 164.310 (Physical Safeguards)",
+                  "compliance_deadline": "2026-10-19",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-20031E",
+                  "type": "must_restrict_access",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 5 related to Section 164.308 (Security Management)",
+                  "priority": "high",
+                  "source_section": "Section 164.308 (Security Management)",
+                  "compliance_deadline": "2026-09-27",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-70A430",
+                  "type": "must_encrypt",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 6 related to Section 164.310 (Physical Safeguards)",
+                  "priority": "low",
+                  "source_section": "Section 164.312 (Technical Safeguards)",
+                  "compliance_deadline": "2026-11-23",
+                  "estimated_effort": "large"
+                },
+                {
+                  "req_id": "REQ-9F8851",
+                  "type": "must_restrict_access",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 7 related to Section 164.312 (Technical Safeguards)",
+                  "priority": "medium",
+                  "source_section": "Section 164.308 (Security Management)",
+                  "compliance_deadline": "2026-10-31",
+                  "estimated_effort": "medium"
+                },
+                {
+                  "req_id": "REQ-8E0205",
+                  "type": "must_notify",
+                  "description": "Requirement extracted from OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update): Obligation 8 related to Section 164.310 (Physical Safeguards)",
+                  "priority": "low",
+                  "source_section": "Section 164.308 (Security Management)",
+                  "compliance_deadline": "2026-12-23",
+                  "estimated_effort": "xlarge"
+                }
+              ],
+              "total_requirements": 8,
+              "critical_count": 1,
+              "analysis_method": "impact_assessment",
+              "confidence_score": 0.857,
+              "cross_references": 6,
+              "analyzed_at": "2026-07-28T13:42:35.826254"
+            },
+            "event_id": "EVT-68ED8E36",
+            "msg_id": "MSG-3060ED7C"
+          }
+        ],
+        "gap_reports": [
+          {
+            "report": {
+              "report_id": "GAP-40133486",
+              "source_analysis_id": "ANL-F7F380ED",
+              "total_requirements": 6,
+              "gaps_found": 1,
+              "compliance_score": 83.3,
+              "overall_risk_level": "MODERATE",
+              "average_risk_score": 0.68,
+              "gaps": [
+                {
+                  "gap_id": "GAP-8B9004",
+                  "requirement_id": "REQ-2EEFB2",
+                  "requirement_type": "must_encrypt",
+                  "description": "Gap identified: must_encrypt obligation not fully covered by current control 'Audit Logging' (active)",
+                  "severity": "medium",
+                  "affected_control": "CTL-003",
+                  "control_status": "active",
+                  "risk_score": 0.68,
+                  "evidence_status": "partial",
+                  "remediation_complexity": "low"
+                }
+              ],
+              "risk_breakdown": {
+                "critical": 0,
+                "high": 0,
+                "medium": 1,
+                "low": 0
+              },
+              "prosecuted_at": "2026-07-28T13:42:35.826310"
+            },
+            "event_id": "EVT-C0BC2F18",
+            "msg_id": "MSG-CBF0B8E1"
+          },
+          {
+            "report": {
+              "report_id": "GAP-52AF9D39",
+              "source_analysis_id": "ANL-53E49985",
+              "total_requirements": 8,
+              "gaps_found": 3,
+              "compliance_score": 62.5,
+              "overall_risk_level": "CRITICAL",
+              "average_risk_score": 0.86,
+              "gaps": [
+                {
+                  "gap_id": "GAP-04EA6F",
+                  "requirement_id": "REQ-F22E77",
+                  "requirement_type": "must_notify",
+                  "description": "Gap identified: must_notify obligation not fully covered by current control 'Breach Notification' (partial)",
+                  "severity": "critical",
+                  "affected_control": "CTL-004",
+                  "control_status": "partial",
+                  "risk_score": 0.75,
+                  "evidence_status": "insufficient",
+                  "remediation_complexity": "high"
+                },
+                {
+                  "gap_id": "GAP-6BDBF5",
+                  "requirement_id": "REQ-3A981E",
+                  "requirement_type": "must_notify",
+                  "description": "Gap identified: must_notify obligation not fully covered by current control 'Access Control Policy' (active)",
+                  "severity": "medium",
+                  "affected_control": "CTL-001",
+                  "control_status": "active",
+                  "risk_score": 0.94,
+                  "evidence_status": "partial",
+                  "remediation_complexity": "high"
+                },
+                {
+                  "gap_id": "GAP-2F0A39",
+                  "requirement_id": "REQ-20031E",
+                  "requirement_type": "must_restrict_access",
+                  "description": "Gap identified: must_restrict_access obligation not fully covered by current control 'Breach Notification' (partial)",
+                  "severity": "high",
+                  "affected_control": "CTL-004",
+                  "control_status": "partial",
+                  "risk_score": 0.89,
+                  "evidence_status": "partial",
+                  "remediation_complexity": "low"
+                }
+              ],
+              "risk_breakdown": {
+                "critical": 1,
+                "high": 1,
+                "medium": 1,
+                "low": 0
+              },
+              "prosecuted_at": "2026-07-28T13:42:35.826377"
+            },
+            "event_id": "EVT-0C513FA1",
+            "msg_id": "MSG-9B3AEA2C"
+          }
+        ],
+        "remediations": [
+          {
+            "plan": {
+              "plan_id": "RMP-E09DA919",
+              "source_gap_report_id": "GAP-40133486",
+              "source_analysis_id": "ANL-F7F380ED",
+              "total_gaps_addressed": 1,
+              "total_steps": 1,
+              "total_estimated_cost_usd": 16498,
+              "total_effort_days": 11,
+              "remediation_steps": [
+                {
+                  "step_id": "REM-2B3D29",
+                  "gap_id": "GAP-8B9004",
+                  "order": 1,
+                  "strategy": "documentation_update",
+                  "action_description": "Implement documentation update for gap in must_encrypt affecting control CTL-003",
+                  "assigned_team": "Legal",
+                  "priority": "medium",
+                  "effort_days": 11,
+                  "estimated_cost_usd": 16498,
+                  "deadline": "2026-08-19",
+                  "dependencies": [],
+                  "status": "planned",
+                  "verification_method": "automated_test"
+                }
+              ],
+              "risk_reduction_target": 0.476,
+              "compliance_target_score": 96.7,
+              "created_at": "2026-07-28T13:42:35.826448"
+            },
+            "event_id": "EVT-E43D4F1D",
+            "escalation_id": null
+          },
+          {
+            "plan": {
+              "plan_id": "RMP-0704514F",
+              "source_gap_report_id": "GAP-52AF9D39",
+              "source_analysis_id": "ANL-53E49985",
+              "total_gaps_addressed": 3,
+              "total_steps": 3,
+              "total_estimated_cost_usd": 192112,
+              "total_effort_days": 58,
+              "remediation_steps": [
+                {
+                  "step_id": "REM-D3797C",
+                  "gap_id": "GAP-04EA6F",
+                  "order": 1,
+                  "strategy": "immediate_implementation",
+                  "action_description": "Implement immediate implementation for gap in must_notify affecting control CTL-004",
+                  "assigned_team": "Operations",
+                  "priority": "critical",
+                  "effort_days": 16,
+                  "estimated_cost_usd": 152899,
+                  "deadline": "2026-08-29",
+                  "dependencies": [],
+                  "status": "planned",
+                  "verification_method": "audit_review"
+                },
+                {
+                  "step_id": "REM-006516",
+                  "gap_id": "GAP-2F0A39",
+                  "order": 2,
+                  "strategy": "scheduled_implementation",
+                  "action_description": "Implement scheduled implementation for gap in must_restrict_access affecting control CTL-004",
+                  "assigned_team": "Engineering",
+                  "priority": "high",
+                  "effort_days": 22,
+                  "estimated_cost_usd": 25112,
+                  "deadline": "2026-09-10",
+                  "dependencies": [
+                    "REM-50C19D",
+                    "REM-5EE0A7"
+                  ],
+                  "status": "planned",
+                  "verification_method": "audit_review"
+                },
+                {
+                  "step_id": "REM-FE8A5A",
+                  "gap_id": "GAP-6BDBF5",
+                  "order": 3,
+                  "strategy": "documentation_update",
+                  "action_description": "Implement documentation update for gap in must_notify affecting control CTL-001",
+                  "assigned_team": "Compliance",
+                  "priority": "medium",
+                  "effort_days": 20,
+                  "estimated_cost_usd": 14101,
+                  "deadline": "2026-09-06",
+                  "dependencies": [
+                    "REM-E09CC2"
+                  ],
+                  "status": "planned",
+                  "verification_method": "compliance_assessment"
+                }
+              ],
+              "risk_reduction_target": 0.602,
+              "compliance_target_score": 92.5,
+              "created_at": "2026-07-28T13:42:35.826632"
+            },
+            "event_id": "EVT-DEF1CC85",
+            "escalation_id": "MSG-B249E037"
+          }
+        ]
+      }
+    }
+  ],
+  "event_log": [
+    {
+      "event_id": "EVT-0E1C77B2",
+      "event_type": "REGULATORY_CHANGE_DETECTED",
+      "source_agent": "Ingestion_Agent",
+      "topic": "regulatory.changes",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825679",
+      "status": "consumed",
+      "correlation_id": "1c7769fa53a94096",
+      "payload_summary": {
+        "change_id": "CHG-DDB1F8B4",
+        "regulation_title": "HIPAA Privacy Rule Modification \u2014 Enhanced Patient Access Rights (2025 Amendment)"
+      }
+    },
+    {
+      "event_id": "EVT-3CE09BFD",
+      "event_type": "ANALYSIS_COMPLETE",
+      "source_agent": "Legal_Analyst_Agent",
+      "topic": "analysis.results",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825821",
+      "status": "consumed",
+      "correlation_id": "EVT-0E1C77B2",
+      "payload_summary": {
+        "analysis_id": "ANL-9BCC1DB4",
+        "total_requirements": 6
+      }
+    },
+    {
+      "event_id": "EVT-F3FAD820",
+      "event_type": "GAPS_IDENTIFIED",
+      "source_agent": "Prosecutor_Agent",
+      "topic": "gap.findings",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825895",
+      "status": "consumed",
+      "correlation_id": "EVT-3CE09BFD",
+      "payload_summary": {
+        "report_id": "GAP-55FD3980",
+        "total_requirements": 6,
+        "gaps_found": 1,
+        "compliance_score": 83.3
+      }
+    },
+    {
+      "event_id": "EVT-E96BC2F3",
+      "event_type": "REMEDIATION_PLAN_READY",
+      "source_agent": "Defender_Agent",
+      "topic": "remediation.plans",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.825981",
+      "status": "published",
+      "correlation_id": "EVT-F3FAD820",
+      "payload_summary": {
+        "plan_id": "RMP-93D80A28",
+        "total_steps": 1
+      }
+    },
+    {
+      "event_id": "EVT-8FD66AC6",
+      "event_type": "REGULATORY_CHANGE_DETECTED",
+      "source_agent": "Ingestion_Agent",
+      "topic": "regulatory.changes",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826049",
+      "status": "consumed",
+      "correlation_id": "1c7769fa53a94096",
+      "payload_summary": {
+        "change_id": "CHG-F1F8EE1A",
+        "regulation_title": "21st Century Cures Act \u2014 Information Blocking Rule v3.0"
+      }
+    },
+    {
+      "event_id": "EVT-C7A114A6",
+      "event_type": "REGULATORY_CHANGE_DETECTED",
+      "source_agent": "Ingestion_Agent",
+      "topic": "regulatory.changes",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826071",
+      "status": "consumed",
+      "correlation_id": "1c7769fa53a94096",
+      "payload_summary": {
+        "change_id": "CHG-2476E77F",
+        "regulation_title": "OCR Enforcement Guidance \u2014 Ransomware and HIPAA (2025 Update)"
+      }
+    },
+    {
+      "event_id": "EVT-46352319",
+      "event_type": "ANALYSIS_COMPLETE",
+      "source_agent": "Legal_Analyst_Agent",
+      "topic": "analysis.results",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826160",
+      "status": "consumed",
+      "correlation_id": "EVT-8FD66AC6",
+      "payload_summary": {
+        "analysis_id": "ANL-F7F380ED",
+        "total_requirements": 6
+      }
+    },
+    {
+      "event_id": "EVT-68ED8E36",
+      "event_type": "ANALYSIS_COMPLETE",
+      "source_agent": "Legal_Analyst_Agent",
+      "topic": "analysis.results",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826258",
+      "status": "consumed",
+      "correlation_id": "EVT-C7A114A6",
+      "payload_summary": {
+        "analysis_id": "ANL-53E49985",
+        "total_requirements": 8
+      }
+    },
+    {
+      "event_id": "EVT-C0BC2F18",
+      "event_type": "GAPS_IDENTIFIED",
+      "source_agent": "Prosecutor_Agent",
+      "topic": "gap.findings",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826315",
+      "status": "consumed",
+      "correlation_id": "EVT-46352319",
+      "payload_summary": {
+        "report_id": "GAP-40133486",
+        "total_requirements": 6,
+        "gaps_found": 1,
+        "compliance_score": 83.3
+      }
+    },
+    {
+      "event_id": "EVT-0C513FA1",
+      "event_type": "GAPS_IDENTIFIED",
+      "source_agent": "Prosecutor_Agent",
+      "topic": "gap.findings",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826381",
+      "status": "consumed",
+      "correlation_id": "EVT-68ED8E36",
+      "payload_summary": {
+        "report_id": "GAP-52AF9D39",
+        "total_requirements": 8,
+        "gaps_found": 3,
+        "compliance_score": 62.5
+      }
+    },
+    {
+      "event_id": "EVT-E43D4F1D",
+      "event_type": "REMEDIATION_PLAN_READY",
+      "source_agent": "Defender_Agent",
+      "topic": "remediation.plans",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826535",
+      "status": "published",
+      "correlation_id": "EVT-C0BC2F18",
+      "payload_summary": {
+        "plan_id": "RMP-E09DA919",
+        "total_steps": 1
+      }
+    },
+    {
+      "event_id": "EVT-DEF1CC85",
+      "event_type": "REMEDIATION_PLAN_READY",
+      "source_agent": "Defender_Agent",
+      "topic": "remediation.plans",
+      "trace_id": "1c7769fa53a94096",
+      "timestamp": "2026-07-28T13:42:35.826636",
+      "status": "published",
+      "correlation_id": "EVT-0C513FA1",
+      "payload_summary": {
+        "plan_id": "RMP-0704514F",
+        "total_steps": 3
+      }
+    }
+  ]
+}

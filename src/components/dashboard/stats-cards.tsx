@@ -3,51 +3,39 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  ShieldCheck,
-  AlertTriangle,
-  FileWarning,
-  Activity,
-  Cpu,
-  MemoryStick,
-  BarChart3,
-  Zap,
-  Layers,
-  Bell,
-  Lock,
-  ClipboardCheck,
+  AlertTriangle, Clock, Zap, Activity, BarChart3, Cpu, Layers, Bell,
+  ShieldCheck, Coins, TrendingDown, Timer,
 } from 'lucide-react'
 
 interface StatsCardsProps {
   stats: {
-    totalTraces: number
+    totalScenarios: number
     totalSpans: number
-    errorTraces: number
+    violationScenarios: number
+    totalImperatives: number
+    totalViolations: number
     totalLogs: number
     errorLogs: number
-    totalAlertRules: number
     firingAlerts: number
     resolvedAlerts: number
-    services: number
     frameworks: number
+    regulationsMonitored: number
+    agents: number
   }
   metricsSummary: {
-    current_cpu: number
-    current_memory: number
-    compliance_score: number
-    violation_rate: number
-    policy_eval_rate: number
-    risk_score: number
-    audit_coverage: number
-    evidence_collection: number
+    current_compliance_posture: number
+    current_violation_rate: number
+    current_remediation_rate: number
+    current_boilerplate_reduction: number
+    current_token_savings: number
+    current_audit_pass_rate: number
+    current_ingestion_rate: number
+    current_imperative_rate: number
+    current_approval_latency: number
     peak_violation_rate: number
-    min_compliance_score: number
+    min_posture_score: number
+    avg_token_savings: number
   }
-}
-
-function SeverityBadge({ value, warnThreshold, critThreshold }: { value: number; warnThreshold: number; critThreshold: number }) {
-  if (value >= critThreshold) return <Badge variant="destructive" className="text-xs">Critical</Badge>
-  if (value >= warnThreshold) return <Badge variant="secondary" className="text-xs">Warning</Badge>
-  return <Badge variant="outline" className="text-xs">Normal</Badge>
 }
 
 function ComplianceHealthBadge({ score }: { score: number }) {
@@ -59,60 +47,60 @@ function ComplianceHealthBadge({ score }: { score: number }) {
 export function StatsCards({ stats, metricsSummary }: StatsCardsProps) {
   const cards = [
     {
-      title: 'Compliance Score',
-      value: `${metricsSummary.compliance_score}%`,
-      subtitle: `Min: ${metricsSummary.min_compliance_score}%`,
+      title: 'Compliance Posture',
+      value: `${metricsSummary.current_compliance_posture}`,
+      subtitle: `Min observed: ${metricsSummary.min_posture_score}`,
       icon: ShieldCheck,
-      badge: <ComplianceHealthBadge score={metricsSummary.compliance_score} />,
-    },
-    {
-      title: 'Risk Score',
-      value: `${metricsSummary.risk_score}`,
-      subtitle: 'Lower is better (0-100)',
-      icon: Activity,
-      badge: <SeverityBadge value={metricsSummary.risk_score} warnThreshold={40} critThreshold={60} />,
+      badge: <ComplianceHealthBadge score={metricsSummary.current_compliance_posture} />,
     },
     {
       title: 'Violation Rate',
-      value: `${metricsSummary.violation_rate}/min`,
-      subtitle: `Peak: ${metricsSummary.peak_violation_rate}/min`,
-      icon: FileWarning,
-      badge: <SeverityBadge value={metricsSummary.violation_rate} warnThreshold={3} critThreshold={5} />,
+      value: `${metricsSummary.current_violation_rate}/hr`,
+      subtitle: `Peak: ${metricsSummary.peak_violation_rate}/hr`,
+      icon: AlertTriangle,
+      badge: metricsSummary.current_violation_rate > 6 ? <Badge variant="destructive" className="text-xs">Surge</Badge> : null,
     },
     {
-      title: 'Policy Evals',
-      value: `${Math.round(metricsSummary.policy_eval_rate)}/min`,
-      subtitle: 'Evaluation throughput',
-      icon: Zap,
+      title: 'Adversarial Audit',
+      value: `${metricsSummary.current_audit_pass_rate}%`,
+      subtitle: 'Violation detection rate (Phase I+II)',
+      icon: Activity,
       badge: null,
     },
     {
-      title: 'Audit Coverage',
-      value: `${metricsSummary.audit_coverage}%`,
-      subtitle: 'Trail completeness',
-      icon: ClipboardCheck,
-      badge: <SeverityBadge value={100 - metricsSummary.audit_coverage} warnThreshold={10} critThreshold={20} />,
+      title: 'Remediation SLA',
+      value: `${metricsSummary.current_remediation_rate}%`,
+      subtitle: 'Violations remediated on time',
+      icon: Clock,
+      badge: metricsSummary.current_remediation_rate < 85 ? <Badge variant="secondary" className="text-xs">Watch</Badge> : null,
     },
     {
-      title: 'Evidence Collection',
-      value: `${metricsSummary.evidence_collection}%`,
-      subtitle: 'Period completeness',
-      icon: Lock,
-      badge: <SeverityBadge value={100 - metricsSummary.evidence_collection} warnThreshold={15} critThreshold={30} />,
+      title: 'Boilerplate Reduction',
+      value: `${metricsSummary.current_boilerplate_reduction}%`,
+      subtitle: 'Token savings (PDF §3.1: 60-80% target)',
+      icon: TrendingDown,
+      badge: null,
     },
     {
-      title: 'CPU Usage',
-      value: `${metricsSummary.current_cpu}%`,
-      subtitle: 'Compliance nodes',
-      icon: Cpu,
-      badge: <SeverityBadge value={metricsSummary.current_cpu} warnThreshold={75} critThreshold={90} />,
+      title: 'Token Cost Saved',
+      value: `$${metricsSummary.current_token_savings}/hr`,
+      subtitle: `Avg: $${metricsSummary.avg_token_savings}/hr`,
+      icon: Coins,
+      badge: null,
     },
     {
-      title: 'Firing Alerts',
-      value: stats.firingAlerts.toString(),
-      subtitle: `${stats.errorLogs} critical log events`,
-      icon: Bell,
-      badge: stats.firingAlerts > 0 ? <Badge variant="destructive" className="text-xs">Active</Badge> : null,
+      title: 'Active Imperatives',
+      value: stats.totalImperatives.toString(),
+      subtitle: `Across ${stats.regulationsMonitored} regulations`,
+      icon: Layers,
+      badge: null,
+    },
+    {
+      title: 'Approval Latency',
+      value: `${metricsSummary.current_approval_latency}h`,
+      subtitle: 'Detection → CCO approval (SLA: 2h)',
+      icon: Timer,
+      badge: metricsSummary.current_approval_latency > 2 ? <Badge variant="destructive" className="text-xs">SLA Breach</Badge> : null,
     },
   ]
 

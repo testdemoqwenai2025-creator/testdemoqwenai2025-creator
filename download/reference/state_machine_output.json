@@ -1,0 +1,379 @@
+{
+  "run_id": "644a919c5aec",
+  "run_time": "2026-07-28T14:53:11.717353",
+  "state_machine": {
+    "entities": {
+      "ENT-PHI-001": {
+        "id": "ENT-PHI-001",
+        "type": "data_store",
+        "current_state": "compliant",
+        "registered_at": "2026-07-28T14:53:11.716945",
+        "compliance_score": 75.0,
+        "risk_factors": []
+      },
+      "ENT-ACLS-002": {
+        "id": "ENT-ACLS-002",
+        "type": "access_control",
+        "current_state": "at_risk",
+        "registered_at": "2026-07-28T14:53:11.716958",
+        "compliance_score": 85.0,
+        "risk_factors": []
+      },
+      "ENT-AUDIT-003": {
+        "id": "ENT-AUDIT-003",
+        "type": "audit_system",
+        "current_state": "compliant",
+        "registered_at": "2026-07-28T14:53:11.716963",
+        "compliance_score": 100.0,
+        "risk_factors": []
+      },
+      "ENT-ENC-004": {
+        "id": "ENT-ENC-004",
+        "type": "encryption_service",
+        "current_state": "compliant",
+        "registered_at": "2026-07-28T14:53:11.716966",
+        "compliance_score": 100,
+        "risk_factors": []
+      },
+      "ENT-TRAIN-005": {
+        "id": "ENT-TRAIN-005",
+        "type": "training_program",
+        "current_state": "compliant",
+        "registered_at": "2026-07-28T14:53:11.716969",
+        "compliance_score": 65.0,
+        "risk_factors": []
+      },
+      "ENT-BAAS-006": {
+        "id": "ENT-BAAS-006",
+        "type": "business_associate",
+        "current_state": "compliant",
+        "registered_at": "2026-07-28T14:53:11.716972",
+        "compliance_score": 100.0,
+        "risk_factors": []
+      }
+    },
+    "total_transitions": 11,
+    "transitions": [
+      {
+        "transition_id": "TRN-FA060483",
+        "entity_id": "ENT-PHI-001",
+        "entity_type": "data_store",
+        "from_state": "compliant",
+        "to_state": "at_risk",
+        "trigger": "regulatory_change_detected",
+        "evidence": [
+          "HIPAA Privacy Rule 2025 Amendment"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717004",
+        "trace_id": "f7033e70f0c6469d",
+        "approved_by": null
+      },
+      {
+        "transition_id": "TRN-CE49E26A",
+        "entity_id": "ENT-PHI-001",
+        "entity_type": "data_store",
+        "from_state": "at_risk",
+        "to_state": "non_compliant",
+        "trigger": "gap_analysis_complete",
+        "evidence": [
+          "3 critical gaps identified",
+          "Breach notification timeline exceeded"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717048",
+        "trace_id": "28984b1622544431",
+        "approved_by": null
+      },
+      {
+        "transition_id": "TRN-6D847128",
+        "entity_id": "ENT-PHI-001",
+        "entity_type": "data_store",
+        "from_state": "non_compliant",
+        "to_state": "under_remediation",
+        "trigger": "remediation_plan_approved",
+        "evidence": [
+          "Plan RMP-001 approved by CISO"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717078",
+        "trace_id": "fd7a267ada294d28",
+        "approved_by": "ciso_johnson"
+      },
+      {
+        "transition_id": "TRN-E73747DD",
+        "entity_id": "ENT-PHI-001",
+        "entity_type": "data_store",
+        "from_state": "under_remediation",
+        "to_state": "compliant",
+        "trigger": "remediation_verified",
+        "evidence": [
+          "All 3 gaps closed",
+          "Audit evidence collected"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717097",
+        "trace_id": "a138084d976e4a42",
+        "approved_by": "compliance_team"
+      },
+      {
+        "transition_id": "TRN-3BF6D637",
+        "entity_id": "ENT-ACLS-002",
+        "entity_type": "access_control",
+        "from_state": "compliant",
+        "to_state": "at_risk",
+        "trigger": "anomaly_detected",
+        "evidence": [
+          "Unusual access pattern from research subnet",
+          "15 failed login attempts"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717117",
+        "trace_id": "d0e89d6938b940af",
+        "approved_by": null
+      },
+      {
+        "transition_id": "TRN-F97FB1EC",
+        "entity_id": "ENT-TRAIN-005",
+        "entity_type": "training_program",
+        "from_state": "at_risk",
+        "to_state": "non_compliant",
+        "trigger": "deadline_missed",
+        "evidence": [
+          "Annual HIPAA training 30 days overdue",
+          "47% staff non-compliant"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717141",
+        "trace_id": "fbcfd9c00e434111",
+        "approved_by": null
+      },
+      {
+        "transition_id": "TRN-E20C22B8",
+        "entity_id": "ENT-TRAIN-005",
+        "entity_type": "training_program",
+        "from_state": "non_compliant",
+        "to_state": "escalated",
+        "trigger": "regulatory_penalty_risk",
+        "evidence": [
+          "Potential OCR enforcement action"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717157",
+        "trace_id": "6996077ec1f74438",
+        "approved_by": "chief_compliance_officer"
+      },
+      {
+        "transition_id": "TRN-0EED3C2C",
+        "entity_id": "ENT-TRAIN-005",
+        "entity_type": "training_program",
+        "from_state": "escalated",
+        "to_state": "under_remediation",
+        "trigger": "emergency_training_deployed",
+        "evidence": [
+          "Mandatory training sessions scheduled"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717177",
+        "trace_id": "705aee57e459453c",
+        "approved_by": "hr_director"
+      },
+      {
+        "transition_id": "TRN-E834EE7E",
+        "entity_id": "ENT-TRAIN-005",
+        "entity_type": "training_program",
+        "from_state": "under_remediation",
+        "to_state": "compliant",
+        "trigger": "training_completion_verified",
+        "evidence": [
+          "94% staff completed",
+          "Audit trail updated"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717191",
+        "trace_id": "4262670d7b7f4e25",
+        "approved_by": "hr_director"
+      },
+      {
+        "transition_id": "TRN-ED224182",
+        "entity_id": "ENT-ENC-004",
+        "entity_type": "encryption_service",
+        "from_state": "compliant",
+        "to_state": "audit_pending",
+        "trigger": "scheduled_audit",
+        "evidence": [
+          "Quarterly encryption audit initiated"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717205",
+        "trace_id": "695fa7dbc18a41af",
+        "approved_by": null
+      },
+      {
+        "transition_id": "TRN-81E0B176",
+        "entity_id": "ENT-ENC-004",
+        "entity_type": "encryption_service",
+        "from_state": "audit_pending",
+        "to_state": "compliant",
+        "trigger": "audit_passed",
+        "evidence": [
+          "AES-256-GCM verified on all PHI stores"
+        ],
+        "timestamp": "2026-07-28T14:53:11.717219",
+        "trace_id": "0f8198b81baa4c32",
+        "approved_by": null
+      }
+    ],
+    "state_histories": {
+      "ENT-PHI-001": [
+        "compliant",
+        "at_risk",
+        "non_compliant",
+        "under_remediation",
+        "compliant"
+      ],
+      "ENT-ACLS-002": [
+        "compliant",
+        "at_risk"
+      ],
+      "ENT-AUDIT-003": [
+        "compliant"
+      ],
+      "ENT-ENC-004": [
+        "compliant",
+        "audit_pending",
+        "compliant"
+      ],
+      "ENT-TRAIN-005": [
+        "at_risk",
+        "non_compliant",
+        "escalated",
+        "under_remediation",
+        "compliant"
+      ],
+      "ENT-BAAS-006": [
+        "compliant"
+      ]
+    },
+    "metrics": {
+      "transitions": 11,
+      "escalations": 1,
+      "resolutions": 2
+    },
+    "valid_transitions": {
+      "compliant": [
+        "at_risk",
+        "audit_pending"
+      ],
+      "at_risk": [
+        "compliant",
+        "non_compliant",
+        "under_remediation"
+      ],
+      "non_compliant": [
+        "under_remediation",
+        "escalated"
+      ],
+      "under_remediation": [
+        "compliant",
+        "at_risk",
+        "non_compliant"
+      ],
+      "escalated": [
+        "under_remediation",
+        "non_compliant"
+      ],
+      "audit_pending": [
+        "compliant",
+        "at_risk",
+        "non_compliant"
+      ]
+    }
+  },
+  "conflicts": {
+    "total_detected": 6,
+    "total_resolved": 6,
+    "records": [
+      {
+        "conflict_id": "CNF-5989F86B",
+        "regulation_a": "HIPAA Privacy Rule 164.524",
+        "regulation_b": "HIPAA Privacy Rule 2025 Amendment",
+        "clause_a": "Patient access within 30 days",
+        "clause_b": "Patient access within 15 days",
+        "conflict_type": "penalty_discrepancy",
+        "severity": "low",
+        "description": "HIPAA Privacy Rule 164.524 prescribes penalty P1 while HIPAA Privacy Rule 2025 Amendment prescribes a different penalty P2 for the same violation",
+        "resolution": "Resolved using strategy: apply_strictest",
+        "resolution_strategy": "apply_strictest",
+        "status": "resolved"
+      },
+      {
+        "conflict_id": "CNF-34A5C68F",
+        "regulation_a": "HIPAA Security Rule 164.312",
+        "regulation_b": "NIST SP 800-171",
+        "clause_a": "Encrypt ePHI at rest",
+        "clause_b": "Encrypt CUI using AES-256",
+        "conflict_type": "jurisdictional_overlap",
+        "severity": "high",
+        "description": "HIPAA Security Rule 164.312 (federal) and NIST SP 800-171 (state) impose conflicting requirements",
+        "resolution": "Resolved using strategy: jurisdictional_split",
+        "resolution_strategy": "jurisdictional_split",
+        "status": "resolved"
+      },
+      {
+        "conflict_id": "CNF-FDEF9184",
+        "regulation_a": "HIPAA Breach Notification",
+        "regulation_b": "State Health Breach Law",
+        "clause_a": "Notify within 60 days",
+        "clause_b": "Notify within 30 days",
+        "conflict_type": "temporal_conflict",
+        "severity": "critical",
+        "description": "HIPAA Breach Notification requires compliance by date D1 while State Health Breach Law sets a different deadline D2",
+        "resolution": "Resolved using strategy: apply_strictest",
+        "resolution_strategy": "apply_strictest",
+        "status": "resolved"
+      },
+      {
+        "conflict_id": "CNF-9CDB118A",
+        "regulation_a": "GDPR Article 17",
+        "regulation_b": "HIPAA 164.524",
+        "clause_a": "Right to erasure",
+        "clause_b": "Retention requirement 6 years",
+        "conflict_type": "temporal_conflict",
+        "severity": "medium",
+        "description": "GDPR Article 17 requires compliance by date D1 while HIPAA 164.524 sets a different deadline D2",
+        "resolution": "Resolved using strategy: escalate_to_legal",
+        "resolution_strategy": "escalate_to_legal",
+        "status": "resolved"
+      },
+      {
+        "conflict_id": "CNF-3F94E95F",
+        "regulation_a": "HIPAA 164.502",
+        "regulation_b": "42 CFR Part 2",
+        "clause_a": "PHI disclosure prohibition",
+        "clause_b": "Substance abuse record disclosure for treatment",
+        "conflict_type": "temporal_conflict",
+        "severity": "low",
+        "description": "HIPAA 164.502 requires compliance by date D1 while 42 CFR Part 2 sets a different deadline D2",
+        "resolution": "Resolved using strategy: merge_requirements",
+        "resolution_strategy": "merge_requirements",
+        "status": "resolved"
+      },
+      {
+        "conflict_id": "CNF-63362D5F",
+        "regulation_a": "SOX Section 404",
+        "regulation_b": "HIPAA 164.312(b)",
+        "clause_a": "Internal controls audit",
+        "clause_b": "Technical safeguard assessment",
+        "conflict_type": "jurisdictional_overlap",
+        "severity": "high",
+        "description": "SOX Section 404 (federal) and HIPAA 164.312(b) (state) impose conflicting requirements",
+        "resolution": "Resolved using strategy: regulation_a_takes_precedence",
+        "resolution_strategy": "regulation_a_takes_precedence",
+        "status": "resolved"
+      }
+    ],
+    "conflict_types": [
+      "penalty_discrepancy",
+      "temporal_conflict",
+      "jurisdictional_overlap"
+    ],
+    "resolution_strategies_used": [
+      "apply_strictest",
+      "escalate_to_legal",
+      "regulation_a_takes_precedence",
+      "merge_requirements",
+      "jurisdictional_split"
+    ]
+  }
+}

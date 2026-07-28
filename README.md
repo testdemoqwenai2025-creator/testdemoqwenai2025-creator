@@ -1,69 +1,99 @@
-# Autonomous Compliance — Observability Infrastructure
+# Autonomous Regulatory Compliance Agent Swarm — Observability
 
-Full-stack observability infrastructure for the **Autonomous Compliance** platform with distributed tracing, compliance metrics, structured audit logs, and intelligent alerting — visualized in a real-time Next.js dashboard.
+Full-stack observability infrastructure for the **Autonomous Regulatory Compliance Agent Swarm** as specified in the Technical Specification (PDF) and SKILLS.md capability matrix. Implements a push-based 4-agent cascade (Ingestion → Legal Analyst → Prosecutor → Defender) with full imperative traceability per PDF §9.2.
 
-## Architecture
+## Architecture (per PDF §2)
 
 ```
-scripts/generate_observability_data.py    → Data Generator (Python)
-public/observability-data.json            → Generated Dataset
-src/app/api/observability/route.ts        → API Endpoint
-src/app/page.tsx                          → Dashboard Entry
-src/components/dashboard/                 → Dashboard Components
-  ├── stats-cards.tsx                     → Compliance KPI Overview Cards
-  ├── metrics-charts.tsx                  → Time-Series Charts (Recharts)
-  ├── traces-panel.tsx                     → Compliance Workflow Trace Viewer
-  ├── logs-panel.tsx                       → Audit Log Browser
-  └── alerts-panel.tsx                     → Compliance Alert Rules & Fired Alerts
+                  Push Update (RSS / Federal Register / EUR-Lex)
+                                       │
+                                       ▼
+                  ┌────────────────────────────────────────┐
+                  │  Agent 1: Ingestion & Schema Agent      │
+                  │  • Boilerplate stripping (60-80% tokens)│
+                  │  • JSON schema enforcement (PDF §3.2)   │
+                  │  • Source: Federal Register, HHS, EDPB  │
+                  └───────────────────┬────────────────────┘
+                                      ▼
+                  ┌────────────────────────────────────────┐
+                  │  Agent 2: Legal Analyst Agent           │
+                  │  • Statutory deconstruction             │
+                  │  • Imperative extraction (IMP-XXXX)     │
+                  │  • Law-to-logic mapping (PDF §4.1)      │
+                  └───────────────────┬────────────────────┘
+                                      ▼
+                  ┌────────────────────────────────────────┐
+                  │  Agent 3: Prosecutor Agent              │
+                  │  • Phase I: Vector search (policy docs) │
+                  │  • Phase II: SQL execution (live infra) │
+                  │  • Adversarial stance: prove violation  │
+                  └───────────────────┬────────────────────┘
+                                      ▼
+                  ┌────────────────────────────────────────┐
+                  │  Agent 4: Defender Agent                │
+                  │  • Remediation plan generation          │
+                  │  • Policy drafts + Jira tickets         │
+                  │  • Traceability to IMP-XXXX enforced    │
+                  └───────────────────┬────────────────────┘
+                                      ▼
+                            Human-in-the-Loop (CCO)
 ```
 
-## Compliance Services
+## Project Structure
 
-| Service | Role |
-|---------|------|
-| **compliance-gateway** | API entry point for all compliance operations |
-| **policy-engine** | Evaluates, compiles, and resolves compliance policies |
-| **audit-logger** | Immutable audit trail recording and integrity validation |
-| **risk-assessor** | Calculates risk scores, threat modeling, residual risk |
-| **compliance-checker** | Automated checks against SOC2, GDPR, HIPAA, ISO27001, PCI-DSS |
-| **data-governor** | Data classification, retention enforcement, access control |
-| **identity-verifier** | Authentication, authorization, access reviews, MFA |
-| **evidence-collector** | Evidence collection, chain validation, attestation |
-| **control-mapper** | Maps controls to NIST, CIS benchmarks, control matrix |
-| **reporting-service** | Generates compliance reports, executive summaries, heatmaps |
+```
+scripts/generate_observability_data.py     → Swarm Data Generator (Python)
+public/observability-data.json             → Generated Dataset
+src/app/api/observability/route.ts         → Main API Endpoint
+src/app/api/observability/
+  ├── traces/route.ts                      → Pipeline traces
+  ├── metrics/route.ts                     → Swarm metrics
+  ├── logs/route.ts                        → Agent activity logs
+  ├── alerts/route.ts                      → Swarm alerts
+  ├── topology/route.ts                    → Agent topology (NEW)
+  ├── imperatives/route.ts                 → Imperative registry (NEW)
+  └── violations/route.ts                  → Violations + remediation (NEW)
+src/app/page.tsx                           → Dashboard Entry (8 tabs)
+src/components/dashboard/
+  ├── stats-cards.tsx                      → Swarm KPI Cards
+  ├── metrics-charts.tsx                   → Agent-colored time-series
+  ├── traces-panel.tsx                     → Pipeline trace waterfall
+  ├── logs-panel.tsx                       → Agent activity browser
+  ├── alerts-panel.tsx                     → Swarm alert rules
+  ├── agent-topology.tsx                   → 4-agent topology view (NEW)
+  ├── imperative-registry.tsx              → IMP-XXXX registry (NEW)
+  └── violations-panel.tsx                 → Violations + remediation (NEW)
+```
 
-## Features
+## Dashboard Tabs (8 total)
 
-### Tracing
-- **50 distributed traces** with 218 spans across 10 compliance services
-- Span hierarchy visualization (parent → child waterfall)
-- Framework tagging (SOC2, GDPR, HIPAA, ISO27001, PCI-DSS, NIST-CSF, CIS)
-- Check type badges (e.g., `SOC2.A1`, `GDPR.Art.6`)
-- Filter by status (OK / Error)
+| Tab | Content | Spec Reference |
+|-----|---------|----------------|
+| **Overview** | Architecture hero, KPIs, API endpoints | PDF §2 |
+| **Agent Topology** | 4-agent cascade diagram + per-agent skills/throughput | PDF §3-§6, SKILLS.md §1-§4 |
+| **Metrics** | 9 swarm-specific metrics color-coded by owning agent | All sections |
+| **Pipeline Traces** | 20 push-update scenarios with span waterfall | PDF §7 |
+| **Imperatives** | IMP-XXXX registry with system-query parameters | PDF §4 |
+| **Violations** | Phase I/II violations + penalty exposure + artifacts | PDF §5-§6 |
+| **Audit Logs** | Agent activity logs with level/agent filters | SKILLS.md §5 |
+| **Alerts** | 10 swarm alert rules mapped to PDF sections | PDF §3, §7, §9 |
 
-### Metrics
-- **6 compliance-specific time-series**: compliance score, violation rate, policy eval throughput, risk score, audit coverage, evidence collection
-- **2 system metrics**: CPU, memory
-- All with 60 data points, interactive tooltips, and threshold lines
-- Summary cards with current, peak, and minimum values
+## Compliance Frameworks Monitored
 
-### Logging
-- **200 structured audit log entries** across 5 severity levels
-- Compliance-specific messages (policy evaluations, control checks, risk assessments, data classification)
-- Service-level filtering (10 compliance services)
-- Full-text search across messages
-- Trace ID correlation and alerting flags
+HIPAA · GDPR · SOC2 · PCI-DSS · EU-AI-ACT · ISO27001 · SEC
 
-### Alerting
-- **10 compliance alert rules** with conditions, severity, and runbook links
-- **25 triggered alerts** (firing / resolved / acknowledged)
-- Framework-specific labels (SOC2, GDPR, HIPAA, etc.)
-- Team labels (compliance, security, governance, legal, engineering)
-- Metric threshold tracking with current vs. threshold display
+## API Endpoints (8 total)
 
-## Compliance Frameworks
-
-SOC2 · GDPR · HIPAA · ISO27001 · PCI-DSS · NIST-CSF · CIS
+| Method | Endpoint | Returns |
+|--------|----------|---------|
+| GET | `/api/observability` | Full swarm data |
+| GET | `/api/observability/topology` | 4-agent topology + architecture |
+| GET | `/api/observability/traces` | Pipeline traces |
+| GET | `/api/observability/metrics` | Swarm metrics (9 series) |
+| GET | `/api/observability/imperatives` | Imperative registry |
+| GET | `/api/observability/violations` | Violations + penalty exposure |
+| GET | `/api/observability/logs` | Agent activity logs |
+| GET | `/api/observability/alerts` | Swarm alert rules + triggered alerts |
 
 ## Tech Stack
 
@@ -79,36 +109,19 @@ SOC2 · GDPR · HIPAA · ISO27001 · PCI-DSS · NIST-CSF · CIS
 ## Getting Started
 
 ```bash
-# Install dependencies
 bun install
-
-# Generate compliance observability data
 python3 scripts/generate_observability_data.py
-
-# Start development server
 bun run dev
-
 # Open http://localhost:3000
 ```
 
-## Data Generation
+## Implementation Guardrails (PDF §9)
 
-```bash
-python3 scripts/generate_observability_data.py
-# Output: download/observability-data.json (~216KB)
-```
+All components enforce the three architectural invariants:
 
-Configuration: Edit `SEED`, `num_traces`, `num_logs`, `num_points`, and `num_alerts` at the top of the script.
-
-## Dashboard Tabs
-
-| Tab | Description |
-|-----|-------------|
-| **Overview** | Hero stats + compliance KPI cards + framework badges + mini charts |
-| **Metrics** | Full time-series charts (compliance + system) with thresholds |
-| **Traces** | Distributed trace table with compliance workflow span waterfall |
-| **Logs** | Filterable audit log viewer with service/level/search |
-| **Alerts** | Compliance alert rules + triggered alert table with runbook links |
+1. **Source Fidelity (§9.1)** — no external data; context-only operations
+2. **Traceable Remediation (§9.2)** — every artifact must map to an IMP-XXXX
+3. **Deterministic Formatting (§9.3)** — strict JSON schemas between agents
 
 ## License
 

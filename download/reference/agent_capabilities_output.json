@@ -1,0 +1,739 @@
+{
+  "run_id": "185e91db5579",
+  "timestamp": "2026-07-28T15:07:53.200431",
+  "agents": {
+    "Ingestion_Agent": {
+      "source_polling": {
+        "skill": "Source Polling & Web Scraping",
+        "proficiency": "L2",
+        "sources_polled": 5,
+        "sources": [
+          {
+            "name": "Federal Register",
+            "url": "https://www.federalregister.gov",
+            "status": "active",
+            "last_poll": "2026-07-28T15:07:53.200447",
+            "frequency": "15min",
+            "articles_found": 8
+          },
+          {
+            "name": "HHS/OCR Guidance",
+            "url": "https://www.hhs.gov/ocr",
+            "status": "active",
+            "last_poll": "2026-07-28T15:07:53.200456",
+            "frequency": "30min",
+            "articles_found": 3
+          },
+          {
+            "name": "ONC Standards",
+            "url": "https://www.healthit.gov",
+            "status": "active",
+            "last_poll": "2026-07-28T15:07:53.200459",
+            "frequency": "1h",
+            "articles_found": 5
+          },
+          {
+            "name": "NIST Cybersecurity",
+            "url": "https://www.nist.gov",
+            "status": "active",
+            "last_poll": "2026-07-28T15:07:53.200462",
+            "frequency": "2h",
+            "articles_found": 3
+          },
+          {
+            "name": "EUR-Lex",
+            "url": "https://eur-lex.europa.eu",
+            "status": "degraded",
+            "last_poll": "2026-07-28T15:07:53.200463",
+            "frequency": "4h",
+            "articles_found": 0
+          }
+        ]
+      },
+      "classification": {
+        "skill": "Document Classification (NLP)",
+        "proficiency": "L2",
+        "documents_classified": 8,
+        "classifications": [
+          {
+            "doc_id": "DOC-61F76898",
+            "title": "HIPAA Privacy Rule Modification 2025",
+            "classified_domain": "HIPAA",
+            "confidence": 0.939,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200482"
+          },
+          {
+            "doc_id": "DOC-DBCE4F74",
+            "title": "GDPR Enforcement Guidance Update",
+            "classified_domain": "GDPR",
+            "confidence": 0.909,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200491"
+          },
+          {
+            "doc_id": "DOC-46909481",
+            "title": "SOX IT Controls Audit Requirement Change",
+            "classified_domain": "SOX",
+            "confidence": 0.933,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200497"
+          },
+          {
+            "doc_id": "DOC-F6ED5F99",
+            "title": "PCI-DSS v5.0 Draft Specification",
+            "classified_domain": "PCI-DSS",
+            "confidence": 0.938,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200502"
+          },
+          {
+            "doc_id": "DOC-39977DF2",
+            "title": "NIST SP 800-171 Revision 3",
+            "classified_domain": "NIST 800-53",
+            "confidence": 0.897,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200507"
+          },
+          {
+            "doc_id": "DOC-D78150C1",
+            "title": "FISMA Annual Reporting Requirement",
+            "classified_domain": "FISMA",
+            "confidence": 0.904,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200511"
+          },
+          {
+            "doc_id": "DOC-09341F88",
+            "title": "CCPA Consumer Right Amendment",
+            "classified_domain": "CCPA",
+            "confidence": 0.923,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200519"
+          },
+          {
+            "doc_id": "DOC-818C391F",
+            "title": "42 CFR Part 2 Consent Guidance",
+            "classified_domain": "42 CFR Part 2",
+            "confidence": 0.894,
+            "method": "zero_shot_nlp",
+            "timestamp": "2026-07-28T15:07:53.200526"
+          }
+        ]
+      },
+      "change_detection": {
+        "skill": "Change Detection (Diff Engine)",
+        "proficiency": "L3",
+        "changes_detected": 3,
+        "deltas": [
+          {
+            "doc_id": "DOC-HIPAA-001",
+            "section": "164.524",
+            "change_type": "amendment",
+            "delta": "added 'electronic format' requirement",
+            "severity": "high",
+            "previous_hash": "3bfc269594ef",
+            "new_hash": "fb04dcb6970e"
+          },
+          {
+            "doc_id": "DOC-HIPAA-001",
+            "section": "164.530",
+            "change_type": "addition",
+            "delta": "new penalty tier for repeated violations",
+            "severity": "critical",
+            "previous_hash": "3bfc269594ef",
+            "new_hash": "e0d2747b9ab7"
+          },
+          {
+            "doc_id": "DOC-GDPR-002",
+            "section": "Article 17",
+            "change_type": "clarification",
+            "delta": "expanded definition of 'right to erasure scope'",
+            "severity": "medium",
+            "previous_hash": "711430f6164e",
+            "new_hash": "4d2f4b668cfc"
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "Metadata Extraction",
+        "proficiency": "L1",
+        "metadata": {
+          "regulation": "HIPAA Privacy Rule 2025 Amendment",
+          "agency": "HHS/OCR",
+          "citation": "85 FR 12345",
+          "effective_date": "2025-10-01",
+          "applicability": [
+            "covered_entities",
+            "business_associates"
+          ],
+          "scope": "patient_access_rights",
+          "penalty_tier": "Tier 2 ($100K per violation)",
+          "extracted_at": "2026-07-28T15:07:53.200563"
+        }
+      },
+      "priority_scoring": {
+        "skill": "Priority Scoring",
+        "proficiency": "L3",
+        "queue": [
+          {
+            "reg_id": "REG-001",
+            "title": "HIPAA Privacy Rule 2025",
+            "score": 0.95,
+            "factors": {
+              "recency": 0.9,
+              "scope": 0.95,
+              "penalty_severity": 1.0,
+              "affected_industries": 0.8
+            }
+          },
+          {
+            "reg_id": "REG-002",
+            "title": "NIST SP 800-171 Rev3",
+            "score": 0.786,
+            "factors": {
+              "recency": 0.7,
+              "scope": 0.6,
+              "penalty_severity": 0.5,
+              "affected_industries": 0.9
+            }
+          },
+          {
+            "reg_id": "REG-003",
+            "title": "State Breach Notification",
+            "score": 0.505,
+            "factors": {
+              "recency": 0.5,
+              "scope": 0.4,
+              "penalty_severity": 0.6,
+              "affected_industries": 0.3
+            }
+          }
+        ]
+      }
+    },
+    "Legal_Analyst_Agent": {
+      "deconstruction": {
+        "skill": "Statutory Deconstruction",
+        "proficiency": "L2",
+        "clause_tree": [
+          {
+            "clause_id": "CL-B7693F8F",
+            "text": "Covered entities must provide individuals with access to their protected health information within 15 days of request.",
+            "type": "conditional",
+            "section": "164.524(a)(1)",
+            "parent_article": "HIPAA Privacy Rule"
+          },
+          {
+            "clause_id": "CL-E1C08FA1",
+            "text": "Electronic copies must be provided if requested..",
+            "type": "obligation",
+            "section": "164.524(a)(1)",
+            "parent_article": "HIPAA Privacy Rule"
+          }
+        ],
+        "total_clauses": 2
+      },
+      "obligations": {
+        "skill": "Obligation Extraction",
+        "proficiency": "L2",
+        "obligations": [
+          {
+            "obl_id": "OBL-F3D30E05",
+            "actor": "covered_entity",
+            "action": "provide_access",
+            "object": "protected_health_information",
+            "condition": "within 15 days of request",
+            "deadline": "15_days",
+            "obligation_type": "must"
+          },
+          {
+            "obl_id": "OBL-132586A7",
+            "actor": "covered_entity",
+            "action": "provide_electronic_copy",
+            "object": "PHI in electronic format",
+            "condition": "if requested by individual",
+            "deadline": "15_days",
+            "obligation_type": "must"
+          },
+          {
+            "obl_id": "OBL-5756E590",
+            "actor": "business_associate",
+            "action": "notify_breach",
+            "object": "unauthorized PHI access",
+            "condition": "within 24 hours of discovery",
+            "deadline": "24_hours",
+            "obligation_type": "must"
+          },
+          {
+            "obl_id": "OBL-917A0F9A",
+            "actor": "covered_entity",
+            "action": "implement_access_controls",
+            "object": "electronic PHI systems",
+            "condition": "reasonable and appropriate",
+            "deadline": "ongoing",
+            "obligation_type": "must"
+          }
+        ],
+        "total": 4
+      },
+      "logic": {
+        "skill": "Logic Formalization",
+        "proficiency": "L3",
+        "rules": [
+          {
+            "rule_id": "RL-E70DC1E1",
+            "predicate": "IF access_request THEN provide_phi WITHIN 15_days",
+            "formal": "access_request(X) ^ covered_entity(Y) -> provide(Y, phi(X), deadline=15d)",
+            "language": "prolog-like",
+            "confidence": 0.94
+          },
+          {
+            "rule_id": "RL-EA3229AC",
+            "predicate": "IF electronic_format_requested THEN deliver_electronic",
+            "formal": "electronic_request(X) ^ has_electronic(phi(X)) -> deliver(Y, phi(X), format=electronic)",
+            "language": "prolog-like",
+            "confidence": 0.91
+          },
+          {
+            "rule_id": "RL-39FA2410",
+            "predicate": "IF breach_detected THEN notify WITHIN 24_hours",
+            "formal": "breach(X) ^ discovered(X, T) -> notify(Y, HHS, breach(X), deadline=T+24h)",
+            "language": "prolog-like",
+            "confidence": 0.97
+          }
+        ],
+        "total_rules": 3
+      },
+      "cross_refs": {
+        "skill": "Cross-Reference Resolution",
+        "proficiency": "L3",
+        "references": [
+          {
+            "from_clause": "164.524(a)",
+            "to_clause": "164.524(b)",
+            "ref_type": "definition",
+            "description": "Defines 'electronic record' reference"
+          },
+          {
+            "from_clause": "164.524",
+            "to_clause": "164.502",
+            "ref_type": "scope",
+            "description": "PHI definition governs access scope"
+          },
+          {
+            "from_clause": "164.524",
+            "to_clause": "1176(a)",
+            "ref_type": "penalty",
+            "description": "Violations subject to civil monetary penalties"
+          },
+          {
+            "from_clause": "164.524(c)",
+            "to_clause": "164.522",
+            "ref_type": "exception",
+            "description": "Psychotherapy notes exception referenced"
+          }
+        ],
+        "graph_nodes": 7,
+        "graph_edges": 4
+      },
+      "risk_cats": {
+        "skill": "Risk Categorization",
+        "proficiency": "L3",
+        "categorizations": [
+          {
+            "req_id": "REQ-001",
+            "description": "15-day access requirement",
+            "risk_tier": "Critical",
+            "justification": "Direct patient safety impact, high penalty exposure"
+          },
+          {
+            "req_id": "REQ-002",
+            "description": "Electronic format delivery",
+            "risk_tier": "High",
+            "justification": "Operational readiness gap, moderate penalty"
+          },
+          {
+            "req_id": "REQ-003",
+            "description": "Access denial documentation",
+            "risk_tier": "Medium",
+            "justification": "Process documentation, low direct risk"
+          },
+          {
+            "req_id": "REQ-004",
+            "description": "Annual training on access procedures",
+            "risk_tier": "Low",
+            "justification": "Ongoing compliance, minor gap impact"
+          }
+        ],
+        "tier_distribution": {
+          "Critical": 1,
+          "High": 1,
+          "Medium": 1,
+          "Low": 1
+        }
+      }
+    },
+    "Prosecutor_Agent": {
+      "evidence": {
+        "skill": "Evidence Gathering",
+        "proficiency": "L2",
+        "sources_queried": 4,
+        "evidence": [
+          {
+            "source": "SIEM",
+            "query": "failed_logins > 10 in 1h",
+            "results_found": 3,
+            "relevance": "access_control_violation"
+          },
+          {
+            "source": "IAM_Audit_Log",
+            "query": "role_changes last 30d",
+            "results_found": 7,
+            "relevance": "authorization_review"
+          },
+          {
+            "source": "Data_Catalog",
+            "query": "PHI fields without encryption",
+            "results_found": 2,
+            "relevance": "encryption_gap"
+          },
+          {
+            "source": "Ticketing_System",
+            "query": "open compliance tickets",
+            "results_found": 5,
+            "relevance": "remediation_tracking"
+          }
+        ]
+      },
+      "gaps": {
+        "skill": "Gap Analysis Engine",
+        "proficiency": "L3",
+        "total_obligations": 8,
+        "gaps_found": 3,
+        "gaps": [
+          {
+            "gap_id": "GAP-59175761",
+            "obligation": "electronic delivery",
+            "control_status": "missing",
+            "severity": "critical",
+            "evidence_status": "insufficient"
+          },
+          {
+            "gap_id": "GAP-BEBE7075",
+            "obligation": "breach notification 24h",
+            "control_status": "missing",
+            "severity": "critical",
+            "evidence_status": "insufficient"
+          },
+          {
+            "gap_id": "GAP-503DEFAE",
+            "obligation": "risk analysis",
+            "control_status": "missing",
+            "severity": "medium",
+            "evidence_status": "insufficient"
+          }
+        ],
+        "compliance_rate": "37.5%"
+      },
+      "violations": {
+        "skill": "Violation Detection",
+        "proficiency": "L3",
+        "violations": [
+          {
+            "violation_id": "VIO-F7F6C1CB",
+            "type": "control_absent",
+            "obligation": "breach notification 24h",
+            "current_state": "60-day notification policy",
+            "penalty_exposure": "$100K-$1.5M per category",
+            "priority": "critical"
+          },
+          {
+            "violation_id": "VIO-0E1E18E8",
+            "type": "control_misconfigured",
+            "obligation": "electronic PHI delivery",
+            "current_state": "manual print-only process",
+            "penalty_exposure": "$10K-$50K per incident",
+            "priority": "high"
+          }
+        ],
+        "total": 2
+      },
+      "deadlines": {
+        "skill": "Temporal Compliance Tracking",
+        "proficiency": "L3",
+        "deadlines": [
+          {
+            "deadline_id": "DL-001",
+            "obligation": "HIPAA training completion",
+            "due_date": "2025-08-15",
+            "days_remaining": 18,
+            "status": "at_risk",
+            "assignee": "HR Department",
+            "progress_pct": 47
+          },
+          {
+            "deadline_id": "DL-002",
+            "obligation": "Risk analysis update",
+            "due_date": "2025-09-30",
+            "days_remaining": 64,
+            "status": "on_track",
+            "assignee": "Security Team",
+            "progress_pct": 72
+          },
+          {
+            "deadline_id": "DL-003",
+            "obligation": "BAA renewal - CloudVendor",
+            "due_date": "2025-07-31",
+            "days_remaining": 3,
+            "status": "overdue",
+            "assignee": "Legal",
+            "progress_pct": 90
+          }
+        ],
+        "overdue": 1,
+        "at_risk": 1,
+        "on_track": 1
+      },
+      "audit_trail": {
+        "skill": "Audit Trail Generation",
+        "proficiency": "L2",
+        "trail": [
+          {
+            "seq": 1,
+            "action": "policy_updated",
+            "agent": "Prosecutor_Agent",
+            "timestamp": "2026-07-28T15:07:53.200682",
+            "hash": "177592635211efe5",
+            "prev_hash": "GENESIS"
+          },
+          {
+            "seq": 2,
+            "action": "evidence_collected",
+            "agent": "Prosecutor_Agent",
+            "timestamp": "2026-07-28T15:07:53.200687",
+            "hash": "d9807dfc77513eac",
+            "prev_hash": "177592635211efe5"
+          },
+          {
+            "seq": 3,
+            "action": "gap_confirmed",
+            "agent": "Prosecutor_Agent",
+            "timestamp": "2026-07-28T15:07:53.200694",
+            "hash": "8a85974dea22827e",
+            "prev_hash": "d9807dfc77513eac"
+          },
+          {
+            "seq": 4,
+            "action": "violation_ticketed",
+            "agent": "Prosecutor_Agent",
+            "timestamp": "2026-07-28T15:07:53.200696",
+            "hash": "e4ec569f6c855877",
+            "prev_hash": "8a85974dea22827e"
+          },
+          {
+            "seq": 5,
+            "action": "deadline_monitored",
+            "agent": "Prosecutor_Agent",
+            "timestamp": "2026-07-28T15:07:53.200697",
+            "hash": "3e1dfc1540ab59c3",
+            "prev_hash": "e4ec569f6c855877"
+          }
+        ],
+        "chain_integrity": "verified",
+        "entries": 5
+      }
+    },
+    "Defender_Agent": {
+      "remediation": {
+        "skill": "Remediation Planning",
+        "proficiency": "L2",
+        "plan": {
+          "plan_id": "RMP-458B3295",
+          "gaps_addressed": 3,
+          "total_steps": 5,
+          "total_cost_usd": 285000,
+          "total_effort_days": 67,
+          "steps": [
+            {
+              "step": 1,
+              "action": "Implement 24h breach notification workflow",
+              "team": "Compliance",
+              "effort_days": 14,
+              "cost": 45000,
+              "priority": "critical",
+              "status": "in_progress"
+            },
+            {
+              "step": 2,
+              "action": "Deploy electronic PHI delivery system",
+              "team": "Engineering",
+              "effort_days": 28,
+              "cost": 120000,
+              "priority": "high",
+              "status": "planned"
+            },
+            {
+              "step": 3,
+              "action": "Update all BAA agreements",
+              "team": "Legal",
+              "effort_days": 10,
+              "cost": 35000,
+              "priority": "high",
+              "status": "planned"
+            },
+            {
+              "step": 4,
+              "action": "Conduct updated risk analysis",
+              "team": "Security",
+              "effort_days": 8,
+              "cost": 55000,
+              "priority": "medium",
+              "status": "planned"
+            },
+            {
+              "step": 5,
+              "action": "Deploy completion monitoring dashboard",
+              "team": "Engineering",
+              "effort_days": 7,
+              "cost": 30000,
+              "priority": "low",
+              "status": "planned"
+            }
+          ]
+        }
+      },
+      "policies": {
+        "skill": "Policy Generation",
+        "proficiency": "L2",
+        "policies": [
+          {
+            "policy_id": "POL-571D6ED5",
+            "title": "Breach Notification Standard Operating Procedure",
+            "type": "SOP",
+            "target_obligation": "24h breach notification",
+            "status": "draft",
+            "sections": 8,
+            "word_count": 3200,
+            "reviewer": "Chief Compliance Officer"
+          },
+          {
+            "policy_id": "POL-83710510",
+            "title": "Electronic PHI Access and Delivery Policy",
+            "type": "Policy",
+            "target_obligation": "electronic format delivery",
+            "status": "under_review",
+            "sections": 12,
+            "word_count": 5400,
+            "reviewer": "Legal Counsel"
+          }
+        ],
+        "total": 2
+      },
+      "escalations": {
+        "skill": "Human-in-the-Loop Routing",
+        "proficiency": "L1",
+        "escalations": [
+          {
+            "esc_id": "ESC-2D8F09E8",
+            "finding": "Critical: 24h breach notification gap",
+            "reason": "High penalty exposure, operational disruption",
+            "assigned_to": "CISO",
+            "priority": "critical",
+            "context": {
+              "gap_id": "GAP-001",
+              "penalty_exposure": "$1.5M",
+              "affected_patients": "~50K"
+            },
+            "status": "pending_review"
+          },
+          {
+            "esc_id": "ESC-FC6D811F",
+            "finding": "BAA renewal overdue by 3 days",
+            "reason": "Vendor continues processing PHI without valid BAA",
+            "assigned_to": "General Counsel",
+            "priority": "high",
+            "context": {
+              "vendor": "CloudVendor Inc",
+              "baa_expiry": "2025-07-28"
+            },
+            "status": "pending_review"
+          }
+        ],
+        "total": 2
+      },
+      "exceptions": {
+        "skill": "Exception & Waiver Management",
+        "proficiency": "L3",
+        "exceptions": [
+          {
+            "exc_id": "EXC-D0D4B51D",
+            "request_type": "risk_acceptance",
+            "control": "encryption at rest for legacy system",
+            "residual_risk": 0.35,
+            "justification": "Legacy system cannot support AES-256, migration planned for Q1 2026",
+            "approver": "CISO",
+            "status": "approved",
+            "valid_until": "2026-03-31"
+          },
+          {
+            "exc_id": "EXC-EDE8AAE6",
+            "request_type": "waiver",
+            "control": "minimum necessary for research cohort",
+            "residual_risk": 0.15,
+            "justification": "IRB-approved research protocol requires full dataset access",
+            "approver": "Privacy Officer",
+            "status": "pending",
+            "valid_until": "2025-12-31"
+          }
+        ],
+        "total": 2
+      },
+      "monitoring": {
+        "skill": "Continuous Monitoring Setup",
+        "proficiency": "L3",
+        "rules": [
+          {
+            "rule_id": "MON-C93F3E86",
+            "name": "Breach notification SLA monitor",
+            "check": "time_since_discovery > 24h AND notification_not_sent",
+            "severity": "critical",
+            "channel": "PagerDuty + Slack"
+          },
+          {
+            "rule_id": "MON-FC2E8993",
+            "name": "Access request response time",
+            "check": "avg_response_time > 10d",
+            "severity": "warning",
+            "channel": "Slack"
+          },
+          {
+            "rule_id": "MON-CA001663",
+            "name": "Training completion rate",
+            "check": "completion_pct < 90 AND days_to_deadline < 30",
+            "severity": "warning",
+            "channel": "Email"
+          },
+          {
+            "rule_id": "MON-ED7E81AF",
+            "name": "Encryption coverage drift",
+            "check": "unencrypted_phi_count > 0",
+            "severity": "critical",
+            "channel": "PagerDuty"
+          }
+        ],
+        "total": 4
+      }
+    }
+  },
+  "summary": {
+    "total_agents": 4,
+    "total_skills_exercised": 20,
+    "proficiency_distribution": {
+      "L1": 2,
+      "L2": 8,
+      "L3": 10,
+      "L4": 0
+    }
+  }
+}
