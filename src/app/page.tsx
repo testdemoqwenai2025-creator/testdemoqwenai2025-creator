@@ -212,6 +212,44 @@ export default function Home() {
               </CardContent>
             </Card>
 
+            {/* API Endpoints */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    API Endpoints
+                  </h3>
+                  <Badge variant="outline" className="text-[10px]">REST</Badge>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { method: 'GET', path: '/api/observability', desc: 'Full observability data (traces, metrics, logs, alerts)', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+                    { method: 'GET', path: '/api/observability/traces', desc: 'Distributed compliance workflow traces', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+                    { method: 'GET', path: '/api/observability/metrics', desc: 'Compliance & system time-series metrics', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+                    { method: 'GET', path: '/api/observability/logs', desc: 'Structured audit event logs', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+                    { method: 'GET', path: '/api/observability/alerts', desc: 'Alert rules & triggered compliance alerts', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+                  ].map((ep) => (
+                    <div key={ep.path} className="flex items-center gap-3 py-1.5 px-3 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ep.color}`}>{ep.method}</span>
+                      <code className="text-xs font-mono flex-1">{ep.path}</code>
+                      <span className="text-[10px] text-muted-foreground hidden lg:inline">{ep.desc}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 shrink-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.origin + ep.path)
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Mini Metrics */}
             <div>
               <div className="flex items-center justify-between mb-3">
