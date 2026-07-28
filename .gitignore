@@ -62,3 +62,5 @@ server.log
 
 # Worklog
 worklog.mdtool-results/
+release/
+.next/
