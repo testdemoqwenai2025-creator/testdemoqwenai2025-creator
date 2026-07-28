@@ -337,3 +337,43 @@ Stage Summary:
 - The public preview URL https://preview-ws-7c3524f9-1c4c-4f16-a5ee-207dd84a1705.space-z.ai/ returns 404 from inside the container because the FC_FUNCTION_NAME bot-id is stale
 - User should open the preview via the chat UI's preview button (which uses the live bot-id provisioned by the Space-Z platform) or share the live URL
 - PAT was redacted from worklog.md; user should also revoke the leaked PAT on GitHub as a precaution
+
+---
+Task ID: 10
+Agent: Main Agent
+Task: Deep Dive, SKILLS v2.0, PDF White Paper, and Stage 10 Build
+
+Work Log:
+- Read full project history (Stages 1-9, SKILLS.md, PDF spec, worklog)
+- Produced deep-dive analysis across 8 forward-looking dimensions (2026-2036 horizon)
+- Created SKILLS_v2.md (download/SKILLS_v2.md): 8 new dimension sections with skill catalogues, proficiency matrices, architectural dependencies, maturity roadmaps, and system gap annotations
+- Created PDF white paper (download/The_Next_Decade_of_Autonomous_Compliance.pdf): 16-page professional report with 10 chapters, 7 tables, cover via Template 01 (HUD), ReportLab body with TocDocTemplate and cascade palette
+- Built Stage 10: Predictive Regulatory Intelligence
+  - Python module: scripts/predictive_intelligence_stage.py (~340 lines)
+    - 12 draft regulatory sources across 8 jurisdictions (EU, US, CA, UK, APAC, CN, Global)
+    - 20 regulatory signals with confidence scoring and enactment probability
+    - Horizon Radar: 6 topic clusters with urgency scoring and earliest enactment dates
+    - Propagation Graph: 8 jurisdiction nodes, 11 edges, 15 propagated signals
+    - Impact Simulation: 8 delta analyses with compliance gap, remediation effort, cost estimates
+    - Temporal Forecast: 7-framework trajectories + resource demand projections + attractor landscape
+  - API route: src/app/api/observability/predictive-intelligence/route.ts (GET, dynamic)
+  - Dashboard component: src/components/dashboard/predictive-intelligence-panel.tsx (~730 lines, 7 sub-panels)
+  - Frontend integration: 15th tab "Predictive Intel" with Brain icon
+  - Type extension: added predictiveIntelligence to ObservabilityData interface
+- Bumped generator version 6.0.0 -> 7.0.0 (10 stages)
+- Regenerated observability-data.json (550KB)
+- Build verified: compiled successfully in 11.6s, 18 API routes + frontend
+- Committed: 2f0121c, pushed to origin/main
+
+Stage Summary:
+- Generator: v7.0.0 — 10 stages
+- New files:
+  - download/SKILLS_v2.md (comprehensive skills matrix v2.0 with 8 forward-looking dimensions)
+  - download/The_Next_Decade_of_Autonomous_Compliance.pdf (16-page white paper)
+  - scripts/predictive_intelligence_stage.py (Stage 10 Python module)
+  - src/app/api/observability/predictive-intelligence/route.ts (18th API route)
+  - src/components/dashboard/predictive-intelligence-panel.tsx (15th dashboard tab)
+- Total API routes: 18
+- Total dashboard tabs: 15
+- Remote: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator
+- Local HEAD == origin/main == 2f0121c
