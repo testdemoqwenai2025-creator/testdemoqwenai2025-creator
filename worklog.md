@@ -436,3 +436,26 @@ Stage Summary:
 - 5 regulator profiles with game theory modeling, Nash equilibrium analysis
 - Remote: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator
 - Local HEAD == origin/main == b420a51
+
+---
+Task ID: 12
+Agent: Main Agent
+Task: Produce v8.0.0 binary, push to GitHub with new token, confirm MIT license, assess marketplace value
+
+Work Log:
+- Confirmed MIT License at /home/z/my-project/LICENSE (Copyright 2026 testdemoqwenai2025-creator)
+- Updated git remote with new 30-day PAT (ghp_QBm...0sn5)
+- Fixed .gitignore formatting (worklog.md and tool-results/ were on same line)
+- Built Next.js standalone binary (Turbopack, 19 API routes, 3 static pages)
+- Created start.sh production startup script with banner
+- Created DEPLOY.md deployment guide with architecture table and Docker instructions
+- Packaged standalone build as regulatory-compliance-dashboard-v8.0.0-standalone.tar.gz (23MB)
+- Committed and pushed to GitHub (main branch)
+- Created GitHub Release v8.0.0 with binary + deployment guide attached
+- Release URL: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator/releases/tag/v8.0.0
+
+Stage Summary:
+- MIT License: Confirmed
+- Binary: release/regulatory-compliance-dashboard-v8.0.0-standalone.tar.gz (23MB)
+- Release: https://github.com/testdemoqwenai2025-creator/testdemoqwenai2025-creator/releases/tag/v8.0.0
+- Marketplace assessment: See conversation response
