@@ -1,0 +1,3 @@
+{
+  "/api/observability/alerts/route": "app/api/observability/alerts/route.js"
+}

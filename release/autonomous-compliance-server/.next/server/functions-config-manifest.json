@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "functions": {
+    "/api": {},
+    "/api/observability": {},
+    "/api/observability/alerts": {},
+    "/api/observability/audit-chain": {},
+    "/api/observability/compliance-score": {},
+    "/api/observability/conflicts": {},
+    "/api/observability/governance-orchestrator": {},
+    "/api/observability/imperatives": {},
+    "/api/observability/jurisdictional-intelligence": {},
+    "/api/observability/logs": {},
+    "/api/observability/metrics": {},
+    "/api/observability/orchestration": {},
+    "/api/observability/regenerate": {},
+    "/api/observability/state-machine": {},
+    "/api/observability/topology": {},
+    "/api/observability/traces": {},
+    "/api/observability/violations": {}
+  }
+}
